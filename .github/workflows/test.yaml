@@ -6,7 +6,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: Build and Release
+    name: Test
     
     steps:
       - name: Checkout Repository
