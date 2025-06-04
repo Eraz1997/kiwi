@@ -3,9 +3,7 @@ use axum::{
     http::{Uri, header::HOST},
 };
 
-use crate::routes::ALL_PATH_PREFIXES;
-
-pub fn subdomain_handler(mut request: Request) -> Request {
+pub fn subdomain_middleware(mut request: Request) -> Request {
     let original_headers = request.headers().clone();
     let subdomain = original_headers.get(HOST).and_then(|host| {
         let domains: Vec<&str> = host.to_str().unwrap_or_default().split(".").collect();
@@ -25,10 +23,8 @@ pub fn subdomain_handler(mut request: Request) -> Request {
     };
 
     let path_and_query = match subdomain {
-        Some(route) if ALL_PATH_PREFIXES.contains(&route) => {
-            format!("/{}{}", route, requested_path_and_query)
-        }
-        Some(_) | None => "".to_string(),
+        Some(route) => format!("/{}{}", route, requested_path_and_query),
+        None => "".to_string(),
     };
 
     let mut uri_builder = Uri::builder().path_and_query(path_and_query);

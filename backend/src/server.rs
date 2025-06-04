@@ -1,4 +1,4 @@
-use crate::{middleware::subdomain_handler, settings::Settings};
+use crate::{middlewares::subdomain::subdomain_middleware, settings::Settings};
 use axum::ServiceExt;
 use axum::{Router, serve};
 use std::io;
@@ -36,7 +36,7 @@ impl Server {
         if self.is_development {
             serve(listener, app.clone()).await
         } else {
-            let subdomain_handler_middleware = MapRequestLayer::new(subdomain_handler);
+            let subdomain_handler_middleware = MapRequestLayer::new(subdomain_middleware);
             let app_with_middlewares = subdomain_handler_middleware.layer(app.clone());
             serve(listener, app_with_middlewares.into_make_service()).await
         }

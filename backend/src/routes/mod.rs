@@ -1,13 +1,15 @@
-use axum::Router;
+use axum::{Router, extract::Path, routing::any};
 
+pub mod admin;
 pub mod auth;
 
-static AUTH_PATH_PREFIX: &str = "auth";
-pub static ALL_PATH_PREFIXES: &[&str] = &[AUTH_PATH_PREFIX];
-
 pub fn create_router() -> Router {
-    Router::new().nest(
-        format!("/{}", AUTH_PATH_PREFIX).as_str(),
-        auth::create_router(),
-    )
+    Router::new()
+        .nest("/admin", admin::create_router())
+        .nest("/auth", auth::create_router())
+        .route("/{service}/{*path}", any(forward_to_service))
+}
+
+async fn forward_to_service(Path((service, path)): Path<(String, String)>) {
+    todo!("forward to {} with path {}", service, path)
 }
