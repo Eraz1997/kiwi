@@ -1,5 +1,6 @@
 use crate::error::Error;
 use crate::logger::Logger;
+use crate::managers::secrets::SecretsManager;
 use crate::server::Server;
 use crate::settings::Settings;
 use axum::extract::DefaultBodyLimit;
@@ -9,8 +10,6 @@ use managers::container::ContainerManager;
 use managers::container::models::ContainerConfiguration;
 use managers::db::DbManager;
 use middlewares::authentication::authentication_middleware;
-use rand::Rng;
-use rand::distr::Alphanumeric;
 use routes::create_router;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
@@ -29,18 +28,12 @@ async fn main() -> Result<(), Error> {
 
     Logger::new(&settings).init();
 
+    let secrets_manager = SecretsManager::new_with_loaded_or_created_secrets().await?;
     let container_manager = ContainerManager::new().await?;
 
-    let db_admin_username: String = rand::rng()
-        .sample_iter(&Alphanumeric)
-        .take(32)
-        .map(char::from)
-        .collect();
-    let db_admin_password: String = rand::rng()
-        .sample_iter(&Alphanumeric)
-        .take(32)
-        .map(char::from)
-        .collect();
+    let db_admin_username = secrets_manager.db_admin_username();
+    let db_admin_password = secrets_manager.db_admin_password();
+
     let db_container_configuration =
         ContainerConfiguration::get_postgres_configuration(&db_admin_username, &db_admin_password)?;
 

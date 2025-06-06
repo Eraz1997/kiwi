@@ -4,17 +4,19 @@ use std::fmt::{Display, Formatter};
 
 use crate::managers::container::error::Error as ContainerError;
 use crate::managers::db::error::Error as DbError;
+use crate::managers::secrets::error::Error as SecretsError;
 
 #[derive(Debug, Clone)]
 pub enum Error {
     Io(String),
     Container(ContainerError),
     Db(DbError),
+    Secrets(SecretsError),
 }
 
 impl Display for Error {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(formatter, "{:?}", self)
+        write!(formatter, "{:#?}", self)
     }
 }
 
@@ -26,11 +28,15 @@ impl IntoResponse for Error {
             Error::Io(message) => (StatusCode::INTERNAL_SERVER_ERROR, message),
             Error::Container(ref error) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("{:?}: {:?}", self, error),
+                format!("{:#?}: {:#?}", self, error),
             ),
             Error::Db(ref error) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("{:?}: {:?}", self, error),
+                format!("{:#?}: {:#?}", self, error),
+            ),
+            Error::Secrets(ref error) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("{:#?}: {:#?}", self, error),
             ),
         }
         .into_response()
@@ -53,5 +59,11 @@ impl From<ContainerError> for Error {
 impl From<DbError> for Error {
     fn from(value: DbError) -> Self {
         Error::Db(value)
+    }
+}
+
+impl From<SecretsError> for Error {
+    fn from(value: SecretsError) -> Self {
+        Error::Secrets(value)
     }
 }

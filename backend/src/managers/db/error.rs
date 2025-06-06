@@ -3,6 +3,7 @@ use deadpool_postgres::{CreatePoolError, PoolError};
 #[derive(Debug, Clone)]
 pub enum Error {
     ConnectionPoolCreation,
+    ConnectionTest,
     Migrations,
     Pool,
     TokioPostgres,
