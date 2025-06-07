@@ -2,10 +2,6 @@ use clap::Parser;
 
 #[derive(Parser, Debug)]
 pub struct Settings {
-    #[arg(long, default_value = "test")]
-    pub admin_password: String,
-    #[arg(long, default_value = "test")]
-    pub admin_username: String,
     #[arg(long, default_value = "127.0.0.1")]
     host: String,
     #[arg(long, default_value = "info")]
