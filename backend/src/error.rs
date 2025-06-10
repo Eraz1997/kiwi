@@ -1,17 +1,24 @@
 use axum::http::StatusCode;
+use axum::http::header::ToStrError;
 use axum::response::{IntoResponse, Response};
 use std::fmt::{Display, Formatter};
 
 use crate::managers::container::error::Error as ContainerError;
+use crate::managers::crypto::error::Error as CryptoError;
 use crate::managers::db::error::Error as DbError;
+use crate::managers::redis::error::Error as RedisError;
 use crate::managers::secrets::error::Error as SecretsError;
 
 #[derive(Debug, Clone)]
 pub enum Error {
-    Io(String),
     Container(ContainerError),
+    Crypto(CryptoError),
     Db(DbError),
+    Io(String),
+    Redis(RedisError),
     Secrets(SecretsError),
+    BadCredentials,
+    StringConversion,
 }
 
 impl Display for Error {
@@ -25,18 +32,31 @@ impl std::error::Error for Error {}
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
         match self {
-            Error::Io(message) => (StatusCode::INTERNAL_SERVER_ERROR, message),
-            Error::Container(ref error) => (
+            Self::Container(ref error) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 format!("{:#?}: {:#?}", self, error),
             ),
-            Error::Db(ref error) => (
+            Self::Crypto(ref error) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 format!("{:#?}: {:#?}", self, error),
             ),
-            Error::Secrets(ref error) => (
+            Self::Db(ref error) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 format!("{:#?}: {:#?}", self, error),
+            ),
+            Self::Io(message) => (StatusCode::INTERNAL_SERVER_ERROR, message),
+            Self::Redis(ref error) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("{:#?}: {:#?}", self, error),
+            ),
+            Self::Secrets(ref error) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("{:#?}: {:#?}", self, error),
+            ),
+            Self::BadCredentials => (StatusCode::UNAUTHORIZED, "bad credentials".to_string()),
+            Self::StringConversion => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "string conversion failed".to_string(),
             ),
         }
         .into_response()
@@ -46,24 +66,42 @@ impl IntoResponse for Error {
 impl From<std::io::Error> for Error {
     fn from(value: std::io::Error) -> Self {
         let message = format!("{:?}", value);
-        Error::Io(message)
+        Self::Io(message)
     }
 }
 
 impl From<ContainerError> for Error {
     fn from(value: ContainerError) -> Self {
-        Error::Container(value)
+        Self::Container(value)
+    }
+}
+
+impl From<CryptoError> for Error {
+    fn from(value: CryptoError) -> Self {
+        Self::Crypto(value)
     }
 }
 
 impl From<DbError> for Error {
     fn from(value: DbError) -> Self {
-        Error::Db(value)
+        Self::Db(value)
+    }
+}
+
+impl From<RedisError> for Error {
+    fn from(value: RedisError) -> Self {
+        Self::Redis(value)
     }
 }
 
 impl From<SecretsError> for Error {
     fn from(value: SecretsError) -> Self {
-        Error::Secrets(value)
+        Self::Secrets(value)
+    }
+}
+
+impl From<ToStrError> for Error {
+    fn from(_: ToStrError) -> Self {
+        Self::StringConversion
     }
 }

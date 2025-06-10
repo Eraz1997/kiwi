@@ -84,6 +84,22 @@ impl ContainerConfiguration {
         })
     }
 
+    pub fn get_redis_configuration(admin_password: &str) -> Result<Self, Error> {
+        Ok(Self {
+            name: "kiwi-redis".to_string(),
+            image_name: "bitnami/redis".to_string(),
+            image_sha: ImageSha::new(
+                "d0f84da5011d75e3cda5516646ceb4ce6fa1eac50014c7090472af1f5ae80c91".to_string(),
+            )?, // 8.0.2
+            exposed_ports: vec![ExposedPort::symmetric(6379)],
+            environment_variables: vec![EnvironmentVariable {
+                name: "REDIS_PASSWORD".to_string(),
+                value: admin_password.to_string(),
+            }],
+            stateful_volume_paths: vec!["/bitnami/redis/data".to_string()],
+        })
+    }
+
     pub fn get_stateful_volume_id(self, path: &String) -> String {
         let raw_id = format!("{}-{}", self.name, path);
         let hashed_id = digest(raw_id);

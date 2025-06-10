@@ -1,17 +1,6 @@
-use axum::routing::{get, post};
-use axum::{Json, Router};
-use models::LoginRequest;
-
-mod models;
+use axum::Router;
+mod api;
 
 pub fn create_router() -> Router {
-    Router::new()
-        .route("/healthy", get(healthy))
-        .route("/login", post(login))
+    Router::new().nest("/api", api::create_router())
 }
-
-async fn healthy() -> &'static str {
-    "OK"
-}
-
-async fn login(Json(_): Json<LoginRequest>) {}

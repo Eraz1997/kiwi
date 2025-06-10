@@ -9,6 +9,8 @@ use tokio_postgres::NoTls;
 
 pub mod constants;
 pub mod error;
+pub mod models;
+pub mod queries;
 
 #[derive(Clone)]
 pub struct DbManager {

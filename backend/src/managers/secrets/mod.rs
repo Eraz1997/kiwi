@@ -50,11 +50,19 @@ impl SecretsManager {
         Ok(Self { secrets })
     }
 
+    pub fn crypto_pepper(&self) -> String {
+        self.secrets.crypto_pepper.get()
+    }
+
     pub fn db_admin_username(&self) -> String {
         self.secrets.db_admin_username.get()
     }
 
     pub fn db_admin_password(&self) -> String {
         self.secrets.db_admin_password.get()
+    }
+
+    pub fn redis_admin_password(&self) -> String {
+        self.secrets.redis_admin_password.get()
     }
 }
