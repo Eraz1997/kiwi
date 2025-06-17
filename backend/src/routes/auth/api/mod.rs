@@ -1,19 +1,17 @@
-use axum::http::header::HOST;
-use axum::http::{HeaderMap, HeaderValue};
 use axum::routing::post;
 use axum::{Extension, Json, Router};
 use axum_extra::extract::CookieJar;
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use models::LoginRequest;
 
+use crate::constants::{ACCESS_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_NAME};
 use crate::error::Error;
+use crate::extractors::Domain;
 use crate::managers::crypto::CryptoManager;
 use crate::managers::db::DbManager;
 use crate::managers::redis::RedisManager;
 use crate::models::Secret;
-use crate::routes::auth::api::constants::{
-    ACCESS_TOKEN_COOKIE_NAME, CREDENTIALS_DURATION, REFRESH_TOKEN_COOKIE_NAME,
-};
+use crate::routes::auth::api::constants::CREDENTIALS_DURATION;
 
 mod constants;
 mod models;
@@ -24,7 +22,7 @@ pub fn create_router() -> Router {
 
 async fn login(
     cookie_jar: CookieJar,
-    headers: HeaderMap,
+    Domain(domain): Domain,
     crypto_manager: Extension<CryptoManager>,
     Extension(db_manager): Extension<DbManager>,
     Extension(redis_manager): Extension<RedisManager>,
@@ -41,18 +39,6 @@ async fn login(
         Err(Error::BadCredentials)?
     }
 
-    let host_header = headers
-        .get(HOST)
-        .cloned()
-        .unwrap_or(HeaderValue::from_static(""));
-    let host_value = host_header.to_str()?;
-    let host_domains: Vec<&str> = host_value.split(".").collect();
-    let second_level_domain = if host_domains.len() > 1 {
-        Some(host_domains[host_domains.len() - 2..].join("."))
-    } else {
-        None
-    };
-
     let access_token = Secret::default().get();
     let refresh_token = Secret::default().get();
 
@@ -61,13 +47,13 @@ async fn login(
         .await?;
 
     let mut access_token_cookie = auth_cookie(ACCESS_TOKEN_COOKIE_NAME.to_string(), access_token);
-    if let Some(second_level_domain) = second_level_domain.clone() {
-        access_token_cookie.set_domain(second_level_domain);
+    if let Some(domain) = domain.clone() {
+        access_token_cookie.set_domain(domain);
     }
 
     let mut refresh_token_cookie =
         auth_cookie(REFRESH_TOKEN_COOKIE_NAME.to_string(), refresh_token);
-    if second_level_domain.is_some() {
+    if domain.is_some() {
         refresh_token_cookie.set_path("/api/refresh-credentials");
     } else {
         // This means we are in development environment

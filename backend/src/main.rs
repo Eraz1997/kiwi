@@ -16,7 +16,9 @@ use routes::create_router;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
+mod constants;
 mod error;
+mod extractors;
 mod logger;
 mod managers;
 mod middlewares;

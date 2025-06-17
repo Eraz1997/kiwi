@@ -45,4 +45,13 @@ impl RedisManager {
 
         Ok(())
     }
+
+    pub async fn get_access_token_user_id(&self, access_token: &str) -> Result<Option<u32>, Error> {
+        let access_token_item = RedisAccessToken {
+            access_token: access_token.to_string(),
+            user_id: 0,
+        };
+        let user_id: Option<u32> = self.client.get(access_token_item.get_key()).await?;
+        Ok(user_id)
+    }
 }
