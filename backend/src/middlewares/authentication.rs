@@ -36,8 +36,8 @@ pub async fn authentication_middleware(
         .get(ACCESS_TOKEN_COOKIE_NAME)
         .map(|cookie| cookie.value().to_owned());
 
-    let user_id = if let Some(access_token) = access_token.clone() {
-        redis_manager.get_access_token_user_id(&access_token).await
+    let access_token_item = if let Some(access_token) = access_token.clone() {
+        redis_manager.get_access_token_item(&access_token).await
     } else {
         Ok(None)
     };
@@ -46,12 +46,13 @@ pub async fn authentication_middleware(
     let encoded_original_uri = encode(&original_uri);
     let redirect_uri_prefix = match domain {
         Some(domain) => format!("https://auth.{}", domain),
+        // This means we are in development environment
         None => "/auth".to_string(),
     };
 
-    match (is_authentication_required, access_token, user_id) {
-        (true, Some(_), Ok(Some(user_id))) => {
-            let user_id_string = user_id.to_string();
+    match (is_authentication_required, access_token, access_token_item) {
+        (true, Some(_), Ok(Some(access_token_item))) => {
+            let user_id_string = access_token_item.user_id.to_string();
             if let Ok(user_id_header_value) = HeaderValue::from_str(&user_id_string) {
                 request
                     .headers_mut()

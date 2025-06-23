@@ -18,6 +18,7 @@ pub enum Error {
     Redis(RedisError),
     Secrets(SecretsError),
     BadCredentials,
+    BadReturnUri,
     StringConversion,
 }
 
@@ -54,6 +55,7 @@ impl IntoResponse for Error {
                 format!("{:#?}: {:#?}", self, error),
             ),
             Self::BadCredentials => (StatusCode::UNAUTHORIZED, "bad credentials".to_string()),
+            Self::BadReturnUri => (StatusCode::UNAUTHORIZED, "bad return uri".to_string()),
             Self::StringConversion => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "string conversion failed".to_string(),

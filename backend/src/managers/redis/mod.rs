@@ -10,7 +10,7 @@ use crate::managers::redis::{
 
 mod constants;
 pub mod error;
-mod models;
+pub mod models;
 pub mod queries;
 
 #[derive(Clone)]
