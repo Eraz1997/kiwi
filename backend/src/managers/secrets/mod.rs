@@ -7,6 +7,7 @@ use tokio::io::AsyncWriteExt;
 
 use crate::managers::secrets::error::Error;
 use crate::managers::secrets::models::Secrets;
+use crate::settings::Settings;
 
 pub mod error;
 mod models;
@@ -16,12 +17,8 @@ pub struct SecretsManager {
 }
 
 impl SecretsManager {
-    pub async fn new_with_loaded_or_created_secrets() -> Result<Self, Error> {
-        let home_path = dirs::home_dir()
-            .ok_or(Error::HomeDirectoryNotFound)?
-            .into_os_string()
-            .into_string()
-            .map_err(|_| Error::PathConversion)?;
+    pub async fn new_with_loaded_or_created_secrets(settings: &Settings) -> Result<Self, Error> {
+        let home_path = settings.get_home_dir();
         let config_folder_path = format!("{}/.kiwi", home_path);
         let secrets_file_path = format!("{}/secrets.json", config_folder_path);
 

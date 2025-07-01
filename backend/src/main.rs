@@ -1,6 +1,7 @@
 use crate::error::Error;
 use crate::logger::Logger;
 use crate::managers::crypto::CryptoManager;
+use crate::managers::dev_frontend::DevFrontendManager;
 use crate::managers::redis::RedisManager;
 use crate::managers::secrets::SecretsManager;
 use crate::server::Server;
@@ -25,6 +26,7 @@ mod middlewares;
 mod models;
 mod routes;
 mod server;
+mod services;
 mod settings;
 
 #[tokio::main]
@@ -33,7 +35,7 @@ async fn main() -> Result<(), Error> {
 
     Logger::new(&settings).init();
 
-    let secrets_manager = SecretsManager::new_with_loaded_or_created_secrets().await?;
+    let secrets_manager = SecretsManager::new_with_loaded_or_created_secrets(&settings).await?;
     let container_manager = ContainerManager::new().await?;
 
     let crypto_pepper = secrets_manager.crypto_pepper();
@@ -56,8 +58,9 @@ async fn main() -> Result<(), Error> {
 
     let db_manager = DbManager::new(&db_admin_username, &db_admin_password).await?;
     let redis_manager = RedisManager::new(&redis_admin_password).await?;
+    let dev_frontend_manager = DevFrontendManager::new(&settings)?;
 
-    let app = create_router()
+    let app = create_router(&settings)
         .layer(TraceLayer::new_for_http())
         .layer(DefaultBodyLimit::disable())
         .layer(CorsLayer::very_permissive())
@@ -65,7 +68,8 @@ async fn main() -> Result<(), Error> {
         .layer(Extension(db_manager))
         .layer(Extension(container_manager))
         .layer(Extension(crypto_manager))
-        .layer(Extension(redis_manager));
+        .layer(Extension(redis_manager))
+        .layer(Extension(dev_frontend_manager));
 
     Server::new(&settings).start(&app).await?;
 

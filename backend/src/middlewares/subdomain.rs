@@ -4,15 +4,29 @@ use axum::{
 };
 
 pub fn subdomain_middleware(mut request: Request) -> Request {
-    let original_headers = request.headers().clone();
-    let subdomain = original_headers.get(HOST).and_then(|host| {
-        let domains: Vec<&str> = host.to_str().unwrap_or_default().split(".").collect();
-        if domains.len() != 3 {
-            None
-        } else {
-            Some(domains[0])
-        }
-    });
+    let subdomain = request
+        .uri()
+        .authority()
+        .map(|host| host.to_string())
+        .or(request
+            .headers()
+            .get(HOST)
+            .cloned()
+            .and_then(|host_header| {
+                host_header
+                    .to_str()
+                    .ok()
+                    .map(|header_value| header_value.to_string())
+            }))
+        .and_then(|host| {
+            let host_value = host.to_string();
+            let domains: Vec<&str> = host_value.split(".").collect();
+            if domains.len() == 3 || (domains.len() == 2 && domains[1].starts_with("localhost:")) {
+                Some(domains[0].to_string())
+            } else {
+                None
+            }
+        });
 
     let uri_parts = request.uri().clone().into_parts();
 

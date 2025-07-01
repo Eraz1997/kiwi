@@ -10,7 +10,7 @@ use urlencoding::decode;
 
 use crate::constants::{ACCESS_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_NAME};
 use crate::error::Error;
-use crate::extractors::Domain;
+use crate::extractors::{Domain, URIScheme};
 use crate::managers::crypto::CryptoManager;
 use crate::managers::db::DbManager;
 use crate::managers::redis::RedisManager;
@@ -55,6 +55,7 @@ async fn login(
 async fn refresh_credentials(
     cookie_jar: CookieJar,
     Domain(domain): Domain,
+    URIScheme(uri_scheme): URIScheme,
     Extension(redis_manager): Extension<RedisManager>,
     payload: Query<RefreshCredentialsQuery>,
 ) -> Result<Response, Error> {
@@ -68,8 +69,6 @@ async fn refresh_credentials(
         Ok(None)
     };
 
-    let sanitised_domain = domain.clone().unwrap_or("localhost".to_string());
-
     let decoded_return_uri = decode(&payload.return_uri)
         .map_err(|_| Error::StringConversion)?
         .to_string();
@@ -81,7 +80,7 @@ async fn refresh_credentials(
         .map(|part| part.to_string())
         .next();
     if return_uri_domain
-        .filter(|return_uri_domain| return_uri_domain.ends_with(&sanitised_domain))
+        .filter(|return_uri_domain| return_uri_domain.ends_with(&domain))
         .is_none()
     {
         return Err(Error::BadReturnUri);
@@ -124,12 +123,20 @@ async fn refresh_credentials(
                 );
                 Redirect::temporary(&decoded_return_uri).into_response()
             } else {
-                erase_cookies_and_redirect_to_login(cookie_jar, payload.return_uri.clone(), domain)
+                erase_cookies_and_redirect_to_login(
+                    cookie_jar,
+                    payload.return_uri.clone(),
+                    domain,
+                    uri_scheme,
+                )
             }
         }
-        (None, _) | (_, Ok(None)) => {
-            erase_cookies_and_redirect_to_login(cookie_jar, payload.return_uri.clone(), domain)
-        }
+        (None, _) | (_, Ok(None)) => erase_cookies_and_redirect_to_login(
+            cookie_jar,
+            payload.return_uri.clone(),
+            domain,
+            uri_scheme,
+        ),
         (_, Err(error)) => Error::from(error).into_response(),
     };
 
@@ -149,7 +156,7 @@ fn auth_cookie<'a>(name: String, value: String) -> Cookie<'a> {
 
 async fn generate_and_store_tokens(
     cookie_jar: CookieJar,
-    domain: Option<String>,
+    domain: String,
     redis_manager: RedisManager,
     user_id: u32,
     old_refresh_token: Option<String>,
@@ -174,23 +181,16 @@ async fn generate_and_store_tokens(
 
 fn set_auth_cookies(
     cookie_jar: CookieJar,
-    domain: Option<String>,
+    domain: String,
     access_token: String,
     refresh_token: String,
 ) {
     let mut access_token_cookie = auth_cookie(ACCESS_TOKEN_COOKIE_NAME.to_string(), access_token);
-    if let Some(domain) = domain.clone() {
-        access_token_cookie.set_domain(domain);
-    }
+    access_token_cookie.set_domain(domain);
 
     let mut refresh_token_cookie =
         auth_cookie(REFRESH_TOKEN_COOKIE_NAME.to_string(), refresh_token);
-    if domain.is_some() {
-        refresh_token_cookie.set_path("/api/refresh-credentials");
-    } else {
-        // This means we are in development environment
-        refresh_token_cookie.set_path("/auth/api/refresh-credentials");
-    }
+    refresh_token_cookie.set_path("/api/refresh-credentials");
 
     let _ = cookie_jar
         .add(access_token_cookie)
@@ -200,7 +200,8 @@ fn set_auth_cookies(
 fn erase_cookies_and_redirect_to_login(
     cookie_jar: CookieJar,
     encoded_return_uri: String,
-    domain: Option<String>,
+    domain: String,
+    uri_scheme: String,
 ) -> Response {
     let mut access_token_cookie = auth_cookie(ACCESS_TOKEN_COOKIE_NAME.to_string(), "".to_string());
     access_token_cookie.set_max_age(Duration::ZERO);
@@ -213,11 +214,7 @@ fn erase_cookies_and_redirect_to_login(
         .add(access_token_cookie)
         .add(refresh_token_cookie);
 
-    let redirect_uri_prefix = match domain {
-        Some(domain) => format!("https://auth.{}", domain),
-        // This means we are in development environment
-        None => "/auth".to_string(),
-    };
+    let redirect_uri_prefix = format!("{}auth.{}", uri_scheme, domain);
 
     let redirect_uri = format!(
         "{}/login?return_uri={}",

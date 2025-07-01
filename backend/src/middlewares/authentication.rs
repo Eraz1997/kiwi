@@ -11,7 +11,7 @@ use urlencoding::encode;
 use crate::{
     constants::{ACCESS_TOKEN_COOKIE_NAME, KIWI_USER_ID_HEADER_NAME},
     error::Error,
-    extractors::Domain,
+    extractors::{Domain, URIScheme},
     managers::redis::RedisManager,
 };
 
@@ -19,6 +19,7 @@ pub async fn authentication_middleware(
     redis_manager: Extension<RedisManager>,
     cookie_jar: CookieJar,
     Domain(domain): Domain,
+    URIScheme(uri_scheme): URIScheme,
     original_uri: OriginalUri,
     mut request: Request,
     next: Next,
@@ -44,11 +45,7 @@ pub async fn authentication_middleware(
 
     let original_uri = original_uri.to_string();
     let encoded_original_uri = encode(&original_uri);
-    let redirect_uri_prefix = match domain {
-        Some(domain) => format!("https://auth.{}", domain),
-        // This means we are in development environment
-        None => "/auth".to_string(),
-    };
+    let redirect_uri_prefix = format!("{}auth.{}", uri_scheme, domain);
 
     match (is_authentication_required, access_token, access_token_item) {
         (true, Some(_), Ok(Some(access_token_item))) => {

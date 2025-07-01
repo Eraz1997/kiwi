@@ -3,9 +3,7 @@ use std::{io, string::FromUtf8Error};
 #[derive(Debug, Clone)]
 pub enum Error {
     Io,
-    HomeDirectoryNotFound,
     JsonConversion,
-    PathConversion,
     StringConversion,
 }
 

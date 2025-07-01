@@ -6,6 +6,7 @@ use std::fmt::{Display, Formatter};
 use crate::managers::container::error::Error as ContainerError;
 use crate::managers::crypto::error::Error as CryptoError;
 use crate::managers::db::error::Error as DbError;
+use crate::managers::dev_frontend::error::Error as DevFrontendError;
 use crate::managers::redis::error::Error as RedisError;
 use crate::managers::secrets::error::Error as SecretsError;
 
@@ -14,6 +15,7 @@ pub enum Error {
     Container(ContainerError),
     Crypto(CryptoError),
     Db(DbError),
+    DevFrontend(DevFrontendError),
     Io(String),
     Redis(RedisError),
     Secrets(SecretsError),
@@ -42,6 +44,10 @@ impl IntoResponse for Error {
                 format!("{:#?}: {:#?}", self, error),
             ),
             Self::Db(ref error) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("{:#?}: {:#?}", self, error),
+            ),
+            Self::DevFrontend(ref error) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 format!("{:#?}: {:#?}", self, error),
             ),
@@ -105,5 +111,11 @@ impl From<SecretsError> for Error {
 impl From<ToStrError> for Error {
     fn from(_: ToStrError) -> Self {
         Self::StringConversion
+    }
+}
+
+impl From<DevFrontendError> for Error {
+    fn from(error: DevFrontendError) -> Self {
+        Self::DevFrontend(error)
     }
 }
