@@ -16,7 +16,12 @@ const compat = new FlatCompat({
 
 export default [
   {
-    ignores: ["**/dist/**/*.js", "**/dist/**/*.ts", "styled-system/**/*"],
+    ignores: [
+      "**/dist/**/*.js",
+      "**/dist/**/*.ts",
+      "styled-system/**/*",
+      "src/components/ui/**/*",
+    ],
   },
   ...compat.extends(
     "eslint:recommended",

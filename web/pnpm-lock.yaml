@@ -10,9 +10,18 @@ importers:
       "@ark-ui/solid":
         specifier: ^5.9.2
         version: 5.9.2(solid-js@1.9.5)
+      argon2-browser:
+        specifier: ^1.18.0
+        version: 1.18.0
+      lucide-solid:
+        specifier: ^0.525.0
+        version: 0.525.0(solid-js@1.9.5)
       solid-js:
         specifier: ^1.9.5
         version: 1.9.5
+      zxcvbn:
+        specifier: ^4.4.2
+        version: 4.4.2
     devDependencies:
       "@eslint/eslintrc":
         specifier: ^3.3.1
@@ -29,9 +38,15 @@ importers:
       "@trivago/prettier-plugin-sort-imports":
         specifier: ^5.2.2
         version: 5.2.2(@vue/compiler-sfc@3.4.19)(prettier@3.5.3)
+      "@types/argon2-browser":
+        specifier: ^1.18.4
+        version: 1.18.4
       "@types/node":
         specifier: ^22.15.21
         version: 22.15.21
+      "@types/zxcvbn":
+        specifier: ^4.4.5
+        version: 4.4.5
       "@typescript-eslint/eslint-plugin":
         specifier: ^8.32.1
         version: 8.32.1(@typescript-eslint/parser@8.32.1(eslint@9.27.0)(typescript@5.7.2))(eslint@9.27.0)(typescript@5.7.2)
@@ -1237,6 +1252,12 @@ packages:
         integrity: sha512-kMnZz+vGGHi4GoHnLmMhGNjm44kGtKUXGnOvrKmMwAuvNjM/PgKVGfUnL7IDvK7Jb2QQ82jq3Zmp04Gy+r3Dkg==,
       }
 
+  "@types/argon2-browser@1.18.4":
+    resolution:
+      {
+        integrity: sha512-K/PHAEKzdCY4mCRhgUTBcuTxeaJyLoPcd5pJ1UFSTb/FAPjj3TCK4EM/DvNmVtDzkQBMD5peJjtch3kVQDf4YQ==,
+      }
+
   "@types/babel__core@7.20.5":
     resolution:
       {
@@ -1283,6 +1304,12 @@ packages:
     resolution:
       {
         integrity: sha512-EV/37Td6c+MgKAbkcLG6vqZ2zEYHD7bvSrzqqs2RIhbA6w3x+Dqz8MZM3sP6kGTeLrdoOgKZe+Xja7tUB2DNkQ==,
+      }
+
+  "@types/zxcvbn@4.4.5":
+    resolution:
+      {
+        integrity: sha512-FZJgC5Bxuqg7Rhsm/bx6gAruHHhDQ55r+s0JhDh8CQ16fD7NsJJ+p8YMMQDhSQoIrSmjpqqYWA96oQVMNkjRyA==,
       }
 
   "@typescript-eslint/eslint-plugin@8.32.1":
@@ -2195,6 +2222,12 @@ packages:
       }
     engines: { node: ">=8" }
 
+  argon2-browser@1.18.0:
+    resolution:
+      {
+        integrity: sha512-ImVAGIItnFnvET1exhsQB7apRztcoC5TnlSqernMJDUjbc/DLq3UEYeXFrLPrlaIl8cVfwnXb6wX2KpFf2zxHw==,
+      }
+
   argparse@2.0.1:
     resolution:
       {
@@ -3098,6 +3131,14 @@ packages:
         integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==,
       }
 
+  lucide-solid@0.525.0:
+    resolution:
+      {
+        integrity: sha512-wh8zzvmWVzYh/q3Fh4nTbH4ZW8ROPvCd7kAXvHqAVDOP6QR4UHSDJ6Q8YCdFkmI/mWipiHJdY1z20R68JDovFQ==,
+      }
+    peerDependencies:
+      solid-js: ^1.4.7
+
   magic-string@0.30.17:
     resolution:
       {
@@ -3895,6 +3936,12 @@ packages:
         integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==,
       }
     engines: { node: ">=10" }
+
+  zxcvbn@4.4.2:
+    resolution:
+      {
+        integrity: sha512-Bq0B+ixT/DMyG8kgX2xWcI5jUvCwqrMxSFam7m0lAf78nf04hv6lNCsyLYdyYTrCVMqNDY/206K7eExYCeSyUQ==,
+      }
 
 snapshots:
   "@ampproject/remapping@2.3.0":
@@ -4700,6 +4747,8 @@ snapshots:
       path-browserify: 1.0.1
       tinyglobby: 0.2.12
 
+  "@types/argon2-browser@1.18.4": {}
+
   "@types/babel__core@7.20.5":
     dependencies:
       "@babel/parser": 7.26.2
@@ -4730,6 +4779,8 @@ snapshots:
   "@types/node@22.15.21":
     dependencies:
       undici-types: 6.21.0
+
+  "@types/zxcvbn@4.4.5": {}
 
   "@typescript-eslint/eslint-plugin@8.32.1(@typescript-eslint/parser@8.32.1(eslint@9.27.0)(typescript@5.7.2))(eslint@9.27.0)(typescript@5.7.2)":
     dependencies:
@@ -5798,6 +5849,8 @@ snapshots:
     dependencies:
       color-convert: 2.0.1
 
+  argon2-browser@1.18.0: {}
+
   argparse@2.0.1: {}
 
   astral-regex@2.0.0: {}
@@ -6300,6 +6353,10 @@ snapshots:
     dependencies:
       yallist: 3.1.1
 
+  lucide-solid@0.525.0(solid-js@1.9.5):
+    dependencies:
+      solid-js: 1.9.5
+
   magic-string@0.30.17:
     dependencies:
       "@jridgewell/sourcemap-codec": 1.5.0
@@ -6705,3 +6762,5 @@ snapshots:
   yallist@3.1.1: {}
 
   yocto-queue@0.1.0: {}
+
+  zxcvbn@4.4.2: {}

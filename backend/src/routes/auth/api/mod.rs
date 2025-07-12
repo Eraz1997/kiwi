@@ -1,6 +1,6 @@
 use axum::extract::Query;
 use axum::response::{IntoResponse, Redirect, Response};
-use axum::routing::{any, post};
+use axum::routing::{any, get, post};
 use axum::{Extension, Json, Router};
 use axum_extra::extract::CookieJar;
 use axum_extra::extract::cookie::{Cookie, SameSite};
@@ -17,7 +17,7 @@ use crate::managers::redis::RedisManager;
 use crate::managers::redis::models::{RedisRefreshToken, RedisRefreshTokenKind};
 use crate::models::Secret;
 use crate::routes::auth::api::constants::CREDENTIALS_DURATION;
-use crate::routes::auth::api::models::RefreshCredentialsQuery;
+use crate::routes::auth::api::models::{GetSealingKeyResponse, RefreshCredentialsQuery};
 
 mod constants;
 mod models;
@@ -26,6 +26,7 @@ pub fn create_router() -> Router {
     Router::new()
         .route("/login", post(login))
         .route("/refresh-credentials", any(refresh_credentials))
+        .route("/sealing-key", get(get_sealing_key))
 }
 
 async fn login(
@@ -47,7 +48,17 @@ async fn login(
         Err(Error::BadCredentials)?
     }
 
-    generate_and_store_tokens(cookie_jar, domain, redis_manager, user_data.id, None).await?;
+    let sealing_key = Secret::default().get();
+
+    generate_and_store_tokens(
+        cookie_jar,
+        domain,
+        redis_manager,
+        user_data.id,
+        sealing_key,
+        None,
+    )
+    .await?;
 
     Ok(())
 }
@@ -99,6 +110,7 @@ async fn refresh_credentials(
                 domain,
                 redis_manager,
                 data.user_id,
+                data.sealing_key,
                 Some(refresh_token),
             )
             .await?;
@@ -143,6 +155,30 @@ async fn refresh_credentials(
     Ok(response)
 }
 
+#[axum::debug_handler]
+async fn get_sealing_key(
+    cookie_jar: CookieJar,
+    Extension(redis_manager): Extension<RedisManager>,
+) -> Result<Json<GetSealingKeyResponse>, Error> {
+    let access_token = cookie_jar
+        .get(ACCESS_TOKEN_COOKIE_NAME)
+        .map(|cookie| cookie.value().to_owned());
+
+    let access_token_item = if let Some(access_token) = access_token.clone() {
+        redis_manager.get_access_token_item(&access_token).await
+    } else {
+        Ok(None)
+    }?;
+
+    if let Some(access_token_item) = access_token_item {
+        Ok(Json(GetSealingKeyResponse {
+            sealing_key: access_token_item.sealing_key,
+        }))
+    } else {
+        Err(Error::BadCredentials)
+    }
+}
+
 fn auth_cookie<'a>(name: String, value: String) -> Cookie<'a> {
     let mut cookie = Cookie::new(name, value);
 
@@ -159,6 +195,7 @@ async fn generate_and_store_tokens(
     domain: String,
     redis_manager: RedisManager,
     user_id: u32,
+    sealing_key: String,
     old_refresh_token: Option<String>,
 ) -> Result<(), Error> {
     let access_token = Secret::default().get();
@@ -166,11 +203,17 @@ async fn generate_and_store_tokens(
 
     if let Some(old_refresh_token) = old_refresh_token {
         redis_manager
-            .store_refreshed_auth_tokens(&old_refresh_token, &access_token, &refresh_token, user_id)
+            .store_refreshed_auth_tokens(
+                &old_refresh_token,
+                &access_token,
+                &refresh_token,
+                user_id,
+                &sealing_key,
+            )
             .await?;
     } else {
         redis_manager
-            .store_active_auth_tokens(&access_token, &refresh_token, user_id)
+            .store_active_auth_tokens(&access_token, &refresh_token, user_id, &sealing_key)
             .await?;
     }
 

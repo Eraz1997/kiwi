@@ -1,6 +1,6 @@
 import { defineConfig } from "@pandacss/dev";
 import { createPreset } from "@park-ui/panda-preset";
-import amber from "@park-ui/panda-preset/colors/amber";
+import lime from "@park-ui/panda-preset/colors/lime";
 import sand from "@park-ui/panda-preset/colors/sand";
 
 export default defineConfig({
@@ -9,7 +9,7 @@ export default defineConfig({
   exclude: [],
   jsxFramework: "solid",
   presets: [
-    createPreset({ accentColor: amber, grayColor: sand, radius: "sm" }),
+    createPreset({ accentColor: lime, grayColor: sand, radius: "2xl" }),
   ],
   theme: {
     extend: {},

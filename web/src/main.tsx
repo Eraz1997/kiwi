@@ -1,4 +1,14 @@
 /* @refresh reload */
+import { App } from "./app.jsx";
+import { RouterProvider } from "./contexts/router.jsx";
+import "./index.css";
 import { render } from "solid-js/web";
 
-render(() => <></>, document.getElementById("root") as HTMLElement);
+render(
+  () => (
+    <RouterProvider>
+      <App />
+    </RouterProvider>
+  ),
+  document.getElementById("root") as HTMLElement,
+);

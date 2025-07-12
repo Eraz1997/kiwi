@@ -30,6 +30,7 @@ pub trait RedisItem: Sized {
 pub struct RedisAccessToken {
     pub access_token: String,
     pub user_id: u32,
+    pub sealing_key: String,
 }
 
 impl RedisItem for RedisAccessToken {
@@ -52,17 +53,26 @@ impl RedisItem for RedisAccessToken {
         }
         consumed_key = consumed_key[13..].to_string();
 
-        let user_id: u32 = value.parse().map_err(|_| Error::Serialisation)?;
+        let values: Vec<String> = value.split(":").map(|value| value.to_string()).collect();
+
+        let user_id: u32 = values
+            .first()
+            .ok_or(Error::Serialisation)?
+            .parse()
+            .map_err(|_| Error::Serialisation)?;
+        let sealing_key = values.get(1).ok_or(Error::Serialisation)?.clone();
 
         Ok(RedisAccessToken {
             access_token: consumed_key,
             user_id,
+            sealing_key,
         })
     }
 }
 
 pub struct RedisActiveRefreshToken {
     pub user_id: u32,
+    pub sealing_key: String,
 }
 
 pub struct RedisRefreshedRefreshToken {
@@ -119,9 +129,13 @@ impl RedisItem for RedisRefreshToken {
             "active" => {
                 let raw_user_id = values.get(1).ok_or(Error::Serialisation)?;
                 let user_id: u32 = raw_user_id.parse().map_err(|_| Error::Serialisation)?;
+                let sealing_key = values.get(2).ok_or(Error::Serialisation)?.to_owned();
                 Ok(RedisRefreshToken {
                     refresh_token: consumed_key,
-                    kind: RedisRefreshTokenKind::Active(RedisActiveRefreshToken { user_id }),
+                    kind: RedisRefreshTokenKind::Active(RedisActiveRefreshToken {
+                        user_id,
+                        sealing_key,
+                    }),
                 })
             }
             "refreshed" => {

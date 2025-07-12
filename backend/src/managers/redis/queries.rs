@@ -15,14 +15,19 @@ impl RedisManager {
         access_token: &str,
         refresh_token: &str,
         user_id: u32,
+        sealing_key: &str,
     ) -> Result<(), Error> {
         let access_token_item = RedisAccessToken {
             access_token: access_token.to_string(),
             user_id,
+            sealing_key: sealing_key.to_string(),
         };
         let refresh_token_item = RedisRefreshToken {
             refresh_token: refresh_token.to_string(),
-            kind: RedisRefreshTokenKind::Active(RedisActiveRefreshToken { user_id }),
+            kind: RedisRefreshTokenKind::Active(RedisActiveRefreshToken {
+                user_id,
+                sealing_key: sealing_key.to_string(),
+            }),
         };
 
         let transaction = self.client.multi();
@@ -56,6 +61,7 @@ impl RedisManager {
         let key = RedisAccessToken {
             access_token: access_token.to_string(),
             user_id: 0,
+            sealing_key: String::new(),
         }
         .to_redis_key();
         let value: Option<String> = self.client.get(key.clone()).await?;
@@ -74,7 +80,10 @@ impl RedisManager {
     ) -> Result<Option<RedisRefreshToken>, Error> {
         let key = RedisRefreshToken {
             refresh_token: refresh_token.to_string(),
-            kind: RedisRefreshTokenKind::Active(RedisActiveRefreshToken { user_id: 0 }),
+            kind: RedisRefreshTokenKind::Active(RedisActiveRefreshToken {
+                user_id: 0,
+                sealing_key: String::new(),
+            }),
         }
         .to_redis_key();
         let value: Option<String> = self.client.get(key.clone()).await?;
@@ -92,6 +101,7 @@ impl RedisManager {
         fresh_access_token: &str,
         fresh_refresh_token: &str,
         user_id: u32,
+        sealing_key: &str,
     ) -> Result<(), Error> {
         let refreshed_refresh_token_item = RedisRefreshToken {
             refresh_token: old_refresh_token.to_string(),
@@ -103,10 +113,14 @@ impl RedisManager {
         let access_token_item = RedisAccessToken {
             access_token: fresh_access_token.to_string(),
             user_id,
+            sealing_key: sealing_key.to_string(),
         };
         let refresh_token_item = RedisRefreshToken {
             refresh_token: fresh_refresh_token.to_string(),
-            kind: RedisRefreshTokenKind::Active(RedisActiveRefreshToken { user_id }),
+            kind: RedisRefreshTokenKind::Active(RedisActiveRefreshToken {
+                user_id,
+                sealing_key: sealing_key.to_string(),
+            }),
         };
 
         let transaction = self.client.multi();

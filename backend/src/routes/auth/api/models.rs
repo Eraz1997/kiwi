@@ -10,3 +10,8 @@ pub struct LoginRequest {
 pub struct RefreshCredentialsQuery {
     pub return_uri: String,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct GetSealingKeyResponse {
+    pub sealing_key: String,
+}
