@@ -5,11 +5,10 @@ use tokio::fs::create_dir_all;
 use tokio::io::AsyncReadExt;
 use tokio::io::AsyncWriteExt;
 
-use crate::managers::secrets::error::Error;
+use crate::error::Error;
 use crate::managers::secrets::models::Secrets;
 use crate::settings::Settings;
 
-pub mod error;
 mod models;
 
 pub struct SecretsManager {

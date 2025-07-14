@@ -13,6 +13,7 @@ use crate::{
     error::Error,
     extractors::{Domain, URIScheme},
     managers::redis::RedisManager,
+    models::UserRole,
 };
 
 pub async fn authentication_middleware(
@@ -31,7 +32,10 @@ pub async fn authentication_middleware(
         .find(|part| !part.is_empty())
         .unwrap_or_default();
 
-    let is_authentication_required = service == "admin";
+    let required_role = match service {
+        "admin" => Some(UserRole::Admin),
+        _ => None,
+    };
 
     let access_token = cookie_jar
         .get(ACCESS_TOKEN_COOKIE_NAME)
@@ -47,33 +51,36 @@ pub async fn authentication_middleware(
     let encoded_original_uri = encode(&original_uri);
     let redirect_uri_prefix = format!("{}auth.{}", uri_scheme, domain);
 
-    match (is_authentication_required, access_token, access_token_item) {
-        (true, Some(_), Ok(Some(access_token_item))) => {
+    match (required_role, access_token, access_token_item) {
+        (Some(required_role), Some(_), Ok(Some(access_token_item))) => {
             let user_id_string = access_token_item.user_id.to_string();
-            if let Ok(user_id_header_value) = HeaderValue::from_str(&user_id_string) {
+
+            if !access_token_item.role.has_permissions(&required_role) {
+                Error::bad_permissions().into_response()
+            } else if let Ok(user_id_header_value) = HeaderValue::from_str(&user_id_string) {
                 request
                     .headers_mut()
                     .append(KIWI_USER_ID_HEADER_NAME, user_id_header_value);
                 next.run(request).await
             } else {
-                Error::StringConversion.into_response()
+                Error::serialisation().into_response()
             }
         }
-        (true, None, Ok(_)) => {
+        (Some(_), None, Ok(_)) => {
             let redirect_uri = format!(
                 "{}/login?return_uri={}",
                 redirect_uri_prefix, encoded_original_uri
             );
             Redirect::to(&redirect_uri).into_response()
         }
-        (true, Some(_), Ok(None)) => {
+        (Some(_), Some(_), Ok(None)) => {
             let redirect_uri = format!(
                 "{}/api/refresh-credentials?return_uri={}",
                 redirect_uri_prefix, encoded_original_uri
             );
             Redirect::temporary(&redirect_uri).into_response()
         }
-        (false, _, Ok(_)) => next.run(request).await,
-        (_, _, Err(error)) => Error::from(error).into_response(),
+        (None, _, Ok(_)) => next.run(request).await,
+        (_, _, Err(error)) => error.into_response(),
     }
 }

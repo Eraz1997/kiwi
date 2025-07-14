@@ -1,7 +1,8 @@
 use regex::Regex;
 use sha256::digest;
 
-use crate::managers::{container::error::Error, db::constants::DATABASE_NAME};
+use crate::error::Error;
+use crate::managers::db::constants::DATABASE_NAME;
 
 #[derive(Clone)]
 pub struct ImageSha {
@@ -12,7 +13,7 @@ impl ImageSha {
     pub fn new(value: String) -> Result<Self, Error> {
         let re = Regex::new(r"^[0-9a-f]{64}$")?;
         if !re.is_match(&value) {
-            Err(Error::InvalidImageSha)
+            Err(Error::container_invalid_image_sha())
         } else {
             Ok(Self { value })
         }

@@ -1,32 +1,47 @@
 use axum::http::StatusCode;
-use axum::http::header::ToStrError;
 use axum::response::{IntoResponse, Response};
+use deadpool_postgres::{CreatePoolError, PoolError};
 use std::fmt::{Display, Formatter};
 
-use crate::managers::container::error::Error as ContainerError;
-use crate::managers::crypto::error::Error as CryptoError;
-use crate::managers::db::error::Error as DbError;
-use crate::managers::dev_frontend::error::Error as DevFrontendError;
-use crate::managers::redis::error::Error as RedisError;
-use crate::managers::secrets::error::Error as SecretsError;
-
 #[derive(Debug, Clone)]
-pub enum Error {
-    Container(ContainerError),
-    Crypto(CryptoError),
-    Db(DbError),
-    DevFrontend(DevFrontendError),
-    Io(String),
-    Redis(RedisError),
-    Secrets(SecretsError),
-    BadCredentials,
-    BadReturnUri,
-    StringConversion,
+pub struct Error {
+    pub code: StatusCode,
+    pub message: String,
+}
+
+impl Error {
+    pub fn bad_credentials() -> Self {
+        Self {
+            code: StatusCode::UNAUTHORIZED,
+            message: "bad credentials".to_string(),
+        }
+    }
+
+    pub fn bad_return_uri() -> Self {
+        Self {
+            code: StatusCode::UNAUTHORIZED,
+            message: "bad return uri".to_string(),
+        }
+    }
+
+    pub fn bad_permissions() -> Self {
+        Self {
+            code: StatusCode::FORBIDDEN,
+            message: "you don't have enough permissions to access this service".to_string(),
+        }
+    }
+
+    pub fn serialisation() -> Self {
+        Self {
+            code: StatusCode::INTERNAL_SERVER_ERROR,
+            message: "serialisation failed".to_string(),
+        }
+    }
 }
 
 impl Display for Error {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(formatter, "{:#?}", self)
+        write!(formatter, "Error {}: {}", self.code, self.message)
     }
 }
 
@@ -34,88 +49,123 @@ impl std::error::Error for Error {}
 
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
-        match self {
-            Self::Container(ref error) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("{:#?}: {:#?}", self, error),
-            ),
-            Self::Crypto(ref error) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("{:#?}: {:#?}", self, error),
-            ),
-            Self::Db(ref error) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("{:#?}: {:#?}", self, error),
-            ),
-            Self::DevFrontend(ref error) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("{:#?}: {:#?}", self, error),
-            ),
-            Self::Io(message) => (StatusCode::INTERNAL_SERVER_ERROR, message),
-            Self::Redis(ref error) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("{:#?}: {:#?}", self, error),
-            ),
-            Self::Secrets(ref error) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("{:#?}: {:#?}", self, error),
-            ),
-            Self::BadCredentials => (StatusCode::UNAUTHORIZED, "bad credentials".to_string()),
-            Self::BadReturnUri => (StatusCode::UNAUTHORIZED, "bad return uri".to_string()),
-            Self::StringConversion => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "string conversion failed".to_string(),
-            ),
+        (self.code, self.message).into_response()
+    }
+}
+
+impl From<CreatePoolError> for Error {
+    fn from(error: CreatePoolError) -> Self {
+        Self {
+            code: StatusCode::INTERNAL_SERVER_ERROR,
+            message: error.to_string(),
         }
-        .into_response()
+    }
+}
+
+impl From<PoolError> for Error {
+    fn from(error: PoolError) -> Self {
+        Self {
+            code: StatusCode::INTERNAL_SERVER_ERROR,
+            message: error.to_string(),
+        }
+    }
+}
+
+impl From<tokio_postgres::Error> for Error {
+    fn from(error: tokio_postgres::Error) -> Self {
+        Self {
+            code: StatusCode::INTERNAL_SERVER_ERROR,
+            message: error.to_string(),
+        }
+    }
+}
+
+impl From<refinery::Error> for Error {
+    fn from(error: refinery::Error) -> Self {
+        Self {
+            code: StatusCode::INTERNAL_SERVER_ERROR,
+            message: error.to_string(),
+        }
+    }
+}
+
+impl From<argon2::Error> for Error {
+    fn from(error: argon2::Error) -> Self {
+        Self {
+            code: StatusCode::INTERNAL_SERVER_ERROR,
+            message: error.to_string(),
+        }
+    }
+}
+
+impl From<argon2::password_hash::Error> for Error {
+    fn from(error: argon2::password_hash::Error) -> Self {
+        Self {
+            code: StatusCode::INTERNAL_SERVER_ERROR,
+            message: error.to_string(),
+        }
+    }
+}
+
+impl From<fred::error::Error> for Error {
+    fn from(error: fred::error::Error) -> Self {
+        Self {
+            code: StatusCode::INTERNAL_SERVER_ERROR,
+            message: error.to_string(),
+        }
+    }
+}
+
+impl From<reqwest::Error> for Error {
+    fn from(error: reqwest::Error) -> Self {
+        Self {
+            code: StatusCode::INTERNAL_SERVER_ERROR,
+            message: error.to_string(),
+        }
     }
 }
 
 impl From<std::io::Error> for Error {
-    fn from(value: std::io::Error) -> Self {
-        let message = format!("{:?}", value);
-        Self::Io(message)
+    fn from(error: std::io::Error) -> Self {
+        Self {
+            code: StatusCode::INTERNAL_SERVER_ERROR,
+            message: error.to_string(),
+        }
     }
 }
 
-impl From<ContainerError> for Error {
-    fn from(value: ContainerError) -> Self {
-        Self::Container(value)
+impl From<serde_json::Error> for Error {
+    fn from(error: serde_json::Error) -> Self {
+        Self {
+            code: StatusCode::INTERNAL_SERVER_ERROR,
+            message: error.to_string(),
+        }
     }
 }
 
-impl From<CryptoError> for Error {
-    fn from(value: CryptoError) -> Self {
-        Self::Crypto(value)
+impl From<std::string::FromUtf8Error> for Error {
+    fn from(error: std::string::FromUtf8Error) -> Self {
+        Self {
+            code: StatusCode::INTERNAL_SERVER_ERROR,
+            message: error.to_string(),
+        }
     }
 }
 
-impl From<DbError> for Error {
-    fn from(value: DbError) -> Self {
-        Self::Db(value)
+impl From<bollard::errors::Error> for Error {
+    fn from(error: bollard::errors::Error) -> Self {
+        Self {
+            code: StatusCode::INTERNAL_SERVER_ERROR,
+            message: error.to_string(),
+        }
     }
 }
 
-impl From<RedisError> for Error {
-    fn from(value: RedisError) -> Self {
-        Self::Redis(value)
-    }
-}
-
-impl From<SecretsError> for Error {
-    fn from(value: SecretsError) -> Self {
-        Self::Secrets(value)
-    }
-}
-
-impl From<ToStrError> for Error {
-    fn from(_: ToStrError) -> Self {
-        Self::StringConversion
-    }
-}
-
-impl From<DevFrontendError> for Error {
-    fn from(error: DevFrontendError) -> Self {
-        Self::DevFrontend(error)
+impl From<regex::Error> for Error {
+    fn from(error: regex::Error) -> Self {
+        Self {
+            code: StatusCode::INTERNAL_SERVER_ERROR,
+            message: error.to_string(),
+        }
     }
 }

@@ -1,4 +1,8 @@
-use crate::managers::db::{DbManager, error::Error, models::UserData};
+use crate::error::Error;
+use crate::managers::db::{
+    DbManager,
+    models::{UserData, UserInvitation},
+};
 
 impl DbManager {
     pub async fn get_user_data(&self, username: &String) -> Result<Option<UserData>, Error> {
@@ -11,6 +15,75 @@ impl DbManager {
             .await?
             .map(UserData::try_from)
             .and_then(Result::ok);
+        Ok(user_data)
+    }
+
+    pub async fn create_admin_invitation_if_no_admin_yet(
+        &self,
+    ) -> Result<Option<UserInvitation>, Error> {
+        let mut client = self.connection_pool.get().await?;
+        let transaction = client.transaction().await?;
+        let statement = transaction
+            .prepare_cached("SELECT * FROM users WHERE role = 'Admin'")
+            .await?;
+        let user_data: Option<UserData> = transaction
+            .query_opt(&statement, &[])
+            .await?
+            .map(UserData::try_from)
+            .and_then(Result::ok);
+        let invitation = match user_data {
+            Some(_) => None,
+            None => {
+                let statement = transaction
+                    .prepare_cached(
+                        "INSERT INTO user_invitations (role) VALUES ('Admin') RETURNING id, role",
+                    )
+                    .await?;
+                let invitation_raw = transaction.query_one(&statement, &[]).await?;
+                let invitation = UserInvitation::try_from(invitation_raw)?;
+                Some(invitation)
+            }
+        };
+        transaction.commit().await?;
+        Ok(invitation)
+    }
+
+    pub async fn create_user_from_invitation(
+        &self,
+        invitation_id: &String,
+        username: &String,
+        password_hash: &String,
+    ) -> Result<Option<UserData>, Error> {
+        let mut client = self.connection_pool.get().await?;
+        let transaction = client.transaction().await?;
+        let statement = transaction
+            .prepare_cached("SELECT id, role FROM user_invitations WHERE id = $1")
+            .await?;
+        let invitation: Option<UserInvitation> = transaction
+            .query_opt(&statement, &[&invitation_id])
+            .await?
+            .map(UserInvitation::try_from)
+            .and_then(Result::ok);
+        let user_data = match invitation {
+            None => None,
+            Some(invitation) => {
+                let statement = transaction.prepare_cached("INSERT INTO users (username, password_hash, role) VALUES ($1, $2, $3) RETURNING (id, password_hash, role)").await?;
+                let user_data_raw = transaction
+                    .query_one(
+                        &statement,
+                        &[&username, &password_hash, &invitation.role.to_string()],
+                    )
+                    .await?;
+                let user_data = UserData::try_from(user_data_raw)?;
+                let statement = transaction
+                    .prepare_cached("DELETE FROM user_invitations WHERE id = $1")
+                    .await?;
+                let _ = transaction.query_one(&statement, &[&invitation_id]).await?;
+
+                Some(user_data)
+            }
+        };
+        transaction.commit().await?;
         Ok(user_data)
     }
 }

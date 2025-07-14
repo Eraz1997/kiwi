@@ -1,5 +1,5 @@
 import { Container } from "../../styled-system/jsx/container";
-import { CircleSlash, Rocket } from "lucide-solid";
+import { CircleSlash, PartyPopper, Rocket } from "lucide-solid";
 import { Component, Match, Show, Switch, createSignal } from "solid-js";
 import { Alert } from "src/components/ui/alert";
 import { Button } from "src/components/ui/button";
@@ -7,6 +7,7 @@ import { Card } from "src/components/ui/card";
 import { Field } from "src/components/ui/field";
 import { Heading } from "src/components/ui/heading";
 import { useRouter } from "src/contexts/router";
+import { createAsyncAction } from "src/hooks/createAsyncAction";
 import { createBackendClient } from "src/hooks/createBackendClient";
 import { createCredentialsClient } from "src/hooks/createCredentialsClient";
 import { VStack } from "styled-system/jsx";
@@ -17,8 +18,8 @@ type LoginError = "unknown" | "bad credentials";
 export const Login: Component = () => {
   const [username, setUsername] = createSignal("");
   const [password, setPassword] = createSignal("");
-  const [isLoading, setIsLoading] = createSignal(false);
   const [error, setError] = createSignal<LoginError | null>();
+  const [success, setSuccess] = createSignal(false);
 
   const isUsernameValid = () =>
     username().length >= 6 &&
@@ -28,11 +29,9 @@ export const Login: Component = () => {
 
   const authBackendClient = createBackendClient("auth");
   const credentialsClient = createCredentialsClient();
-  const { domain, isLocalhost, queryParams } = useRouter();
+  const { queryParams } = useRouter();
 
-  const signIn = async () => {
-    setIsLoading(true);
-
+  const { isLoading, call: signIn } = createAsyncAction(async () => {
     const passwordHash =
       await credentialsClient.getLoginPasswordHash(password());
 
@@ -43,26 +42,39 @@ export const Login: Component = () => {
 
     if (result.statusCode === 401) {
       setError("bad credentials");
-      setIsLoading(false);
     } else if (result.statusCode >= 400) {
       setError("unknown");
-      setIsLoading(false);
     } else {
-      const scheme = isLocalhost() ? "http://" : "https://";
-      const returnUri = queryParams().return_uri ?? `${scheme}admin.${domain}`;
+      const returnUri = queryParams().return_uri;
       await credentialsClient.storeAndSealLocalEncryptionKey(
         username(),
         password(),
       );
-      window.location.replace(returnUri);
+      if (returnUri) {
+        window.location.replace(returnUri);
+      } else {
+        setSuccess(true);
+      }
     }
-  };
+  });
 
   return (
     <Container p={{ base: "12" }} maxW="md">
       <VStack gap="6">
         <Heading size="6xl">🥝</Heading>
-        <Show when={error()}>
+        <Show when={success()}>
+          <Alert.Root borderColor="lime.default">
+            <Alert.Icon
+              color="lime.text"
+              asChild={(iconProps) => <PartyPopper {...iconProps()} />}
+            />
+            <Alert.Content>
+              <Alert.Title color="lime.text">Signed in</Alert.Title>
+              <Alert.Description color="lime.text">
+                You can now visit Kiwi services!
+              </Alert.Description>
+            </Alert.Content>
+          </Alert.Root>
           <Alert.Root borderColor="red.default">
             <Alert.Icon
               color="red.text"
@@ -119,7 +131,7 @@ export const Login: Component = () => {
             <Button
               loading={isLoading()}
               disabled={!isUsernameValid() || !isPasswordValid()}
-              onClick={signIn}
+              onClick={() => signIn()}
             >
               Sign In
               <Rocket />

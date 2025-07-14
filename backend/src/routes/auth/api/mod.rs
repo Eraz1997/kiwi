@@ -15,18 +15,51 @@ use crate::managers::crypto::CryptoManager;
 use crate::managers::db::DbManager;
 use crate::managers::redis::RedisManager;
 use crate::managers::redis::models::{RedisRefreshToken, RedisRefreshTokenKind};
-use crate::models::Secret;
+use crate::models::{Secret, UserRole};
 use crate::routes::auth::api::constants::CREDENTIALS_DURATION;
-use crate::routes::auth::api::models::{GetSealingKeyResponse, RefreshCredentialsQuery};
+use crate::routes::auth::api::models::{
+    CreateUserRequest, GetSealingKeyResponse, RefreshCredentialsQuery,
+};
 
 mod constants;
 mod models;
 
 pub fn create_router() -> Router {
     Router::new()
+        .route("/create-user", post(create_user))
         .route("/login", post(login))
         .route("/refresh-credentials", any(refresh_credentials))
         .route("/sealing-key", get(get_sealing_key))
+}
+
+async fn create_user(
+    cookie_jar: CookieJar,
+    Domain(domain): Domain,
+    crypto_manager: Extension<CryptoManager>,
+    Extension(db_manager): Extension<DbManager>,
+    Extension(redis_manager): Extension<RedisManager>,
+    Json(payload): Json<CreateUserRequest>,
+) -> Result<(), Error> {
+    let password_hash = crypto_manager.generate_hash(&payload.password_hash)?;
+    let user_data = db_manager
+        .create_user_from_invitation(&payload.invitation_id, &payload.username, &password_hash)
+        .await?
+        .ok_or(Error::bad_credentials())?;
+
+    let sealing_key = Secret::default().get();
+
+    generate_and_store_tokens(
+        cookie_jar,
+        domain,
+        redis_manager,
+        user_data.id,
+        sealing_key,
+        user_data.role,
+        None,
+    )
+    .await?;
+
+    Ok(())
 }
 
 async fn login(
@@ -40,12 +73,12 @@ async fn login(
     let user_data = db_manager
         .get_user_data(&payload.username)
         .await?
-        .ok_or(Error::BadCredentials)?;
+        .ok_or(Error::bad_credentials())?;
     let valid_password =
         crypto_manager.matches(&payload.password_hash, &user_data.password_hash)?;
 
     if !valid_password {
-        Err(Error::BadCredentials)?
+        Err(Error::bad_credentials())?
     }
 
     let sealing_key = Secret::default().get();
@@ -56,6 +89,7 @@ async fn login(
         redis_manager,
         user_data.id,
         sealing_key,
+        user_data.role,
         None,
     )
     .await?;
@@ -81,10 +115,10 @@ async fn refresh_credentials(
     };
 
     let decoded_return_uri = decode(&payload.return_uri)
-        .map_err(|_| Error::StringConversion)?
+        .map_err(|_| Error::serialisation())?
         .to_string();
     if !decoded_return_uri.starts_with("https://") {
-        return Err(Error::BadReturnUri);
+        return Err(Error::bad_return_uri());
     }
     let return_uri_domain: Option<String> = decoded_return_uri[8..]
         .split("/")
@@ -94,7 +128,7 @@ async fn refresh_credentials(
         .filter(|return_uri_domain| return_uri_domain.ends_with(&domain))
         .is_none()
     {
-        return Err(Error::BadReturnUri);
+        return Err(Error::bad_return_uri());
     }
 
     let response = match (refresh_token, refresh_token_item) {
@@ -111,6 +145,7 @@ async fn refresh_credentials(
                 redis_manager,
                 data.user_id,
                 data.sealing_key,
+                data.role,
                 Some(refresh_token),
             )
             .await?;
@@ -149,13 +184,12 @@ async fn refresh_credentials(
             domain,
             uri_scheme,
         ),
-        (_, Err(error)) => Error::from(error).into_response(),
+        (_, Err(error)) => error.into_response(),
     };
 
     Ok(response)
 }
 
-#[axum::debug_handler]
 async fn get_sealing_key(
     cookie_jar: CookieJar,
     Extension(redis_manager): Extension<RedisManager>,
@@ -175,7 +209,7 @@ async fn get_sealing_key(
             sealing_key: access_token_item.sealing_key,
         }))
     } else {
-        Err(Error::BadCredentials)
+        Err(Error::bad_credentials())
     }
 }
 
@@ -196,6 +230,7 @@ async fn generate_and_store_tokens(
     redis_manager: RedisManager,
     user_id: u32,
     sealing_key: String,
+    role: UserRole,
     old_refresh_token: Option<String>,
 ) -> Result<(), Error> {
     let access_token = Secret::default().get();
@@ -209,11 +244,12 @@ async fn generate_and_store_tokens(
                 &refresh_token,
                 user_id,
                 &sealing_key,
+                &role,
             )
             .await?;
     } else {
         redis_manager
-            .store_active_auth_tokens(&access_token, &refresh_token, user_id, &sealing_key)
+            .store_active_auth_tokens(&access_token, &refresh_token, user_id, &sealing_key, &role)
             .await?;
     }
 

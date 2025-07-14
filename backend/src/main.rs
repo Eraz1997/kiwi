@@ -60,6 +60,15 @@ async fn main() -> Result<(), Error> {
     let redis_manager = RedisManager::new(&redis_admin_password).await?;
     let dev_frontend_manager = DevFrontendManager::new(&settings)?;
 
+    let invitation = db_manager.create_admin_invitation_if_no_admin_yet().await?;
+    if let Some(invitation) = invitation {
+        tracing::warn!(
+            "admin user not found. invitation created with ID: {}. please visit auth.<your-domain>/create-user?invitationId={}",
+            invitation.id,
+            invitation.id
+        );
+    }
+
     let app = create_router(&settings)
         .layer(TraceLayer::new_for_http())
         .layer(DefaultBodyLimit::disable())

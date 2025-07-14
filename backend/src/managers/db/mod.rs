@@ -1,8 +1,8 @@
 use std::{ops::DerefMut, time::Duration};
 
+use crate::error::Error;
 use constants::{APPLICATION_NAME, DATABASE_NAME, HOST, MAX_POOL_SIZE, PORT};
 use deadpool_postgres::{Config, ManagerConfig, Pool, PoolConfig, RecyclingMethod, Runtime};
-use error::Error;
 use refinery::embed_migrations;
 use tokio::time::sleep;
 use tokio_postgres::NoTls;
@@ -76,7 +76,7 @@ impl DbManager {
         if value == 1 {
             Ok(())
         } else {
-            Err(Error::ConnectionTest)
+            Err(Error::db_connection_test())
         }
     }
 }

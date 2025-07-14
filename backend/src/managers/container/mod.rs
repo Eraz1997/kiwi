@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::error::Error;
 #[allow(deprecated)]
 use bollard::volume::CreateVolumeOptions;
 use bollard::{
@@ -10,7 +11,6 @@ use bollard::{
     },
     secret::{ContainerCreateBody, ContainerSummaryStateEnum, HostConfig, PortBinding},
 };
-use error::Error;
 use futures::stream::StreamExt;
 use models::ContainerConfiguration;
 
@@ -37,7 +37,10 @@ impl ContainerManager {
             tracing::info!("no running containers found, skipping reset");
         } else {
             for container in running_containers.iter() {
-                let container_id = container.id.clone().ok_or(Error::ContainerIdNotFound)?;
+                let container_id = container
+                    .id
+                    .clone()
+                    .ok_or(Error::container_id_not_found())?;
                 match container.state {
                     Some(ContainerSummaryStateEnum::CREATED)
                     | Some(ContainerSummaryStateEnum::RUNNING)

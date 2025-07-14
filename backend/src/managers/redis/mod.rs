@@ -3,13 +3,10 @@ use fred::{
     types::Builder,
 };
 
-use crate::managers::redis::{
-    constants::{CONNECTION_TIMEOUT, DSN},
-    error::Error,
-};
+use crate::error::Error;
+use crate::managers::redis::constants::{CONNECTION_TIMEOUT, DSN};
 
 mod constants;
-pub mod error;
 pub mod models;
 pub mod queries;
 

@@ -1,8 +1,9 @@
-use argon2::{Argon2, Params, PasswordHash, PasswordVerifier};
+use argon2::{
+    Argon2, Params, PasswordHash, PasswordHasher, PasswordVerifier,
+    password_hash::{SaltString, rand_core::OsRng},
+};
 
-use crate::managers::crypto::error::Error;
-
-pub mod error;
+use crate::error::Error;
 
 #[derive(Clone)]
 pub struct CryptoManager {
@@ -15,6 +16,13 @@ impl CryptoManager {
         Ok(Self {
             pepper: pepper.to_string(),
         })
+    }
+
+    pub fn generate_hash(&self, clear_text: &str) -> Result<String, Error> {
+        let hasher = self.get_hasher()?;
+        let salt = SaltString::generate(&mut OsRng);
+        let password_hash = hasher.hash_password(clear_text.as_bytes(), &salt)?;
+        Ok(password_hash.to_string())
     }
 
     pub fn matches(&self, clear_text: &str, hashed_text: &str) -> Result<bool, Error> {

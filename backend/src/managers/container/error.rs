@@ -1,19 +1,18 @@
-#[derive(Debug, Clone)]
-pub enum Error {
-    ContainerIdNotFound,
-    Docker,
-    InvalidImageSha,
-    RegexCreation,
-}
+use crate::error::Error;
+use axum::http::StatusCode;
 
-impl From<bollard::errors::Error> for Error {
-    fn from(_: bollard::errors::Error) -> Self {
-        Self::Docker
+impl Error {
+    pub fn container_id_not_found() -> Self {
+        Self {
+            code: StatusCode::INTERNAL_SERVER_ERROR,
+            message: "container id not found".to_string(),
+        }
     }
-}
 
-impl From<regex::Error> for Error {
-    fn from(_: regex::Error) -> Self {
-        Self::RegexCreation
+    pub fn container_invalid_image_sha() -> Self {
+        Self {
+            code: StatusCode::INTERNAL_SERVER_ERROR,
+            message: "container image sha is not valid".to_string(),
+        }
     }
 }

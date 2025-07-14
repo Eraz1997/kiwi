@@ -1,7 +1,9 @@
+use std::str::FromStr;
+
 use fred::types::Expiration;
 use time::Duration;
 
-use crate::managers::redis::error::Error;
+use crate::{error::Error, models::UserRole};
 
 pub trait RedisItem: Sized {
     fn to_redis_key_suffix(&self) -> String;
@@ -15,7 +17,7 @@ pub trait RedisItem: Sized {
     fn from_redis_item(key: String, value: String) -> Result<Self, Error> {
         let mut consumed_key = key.clone();
         if !consumed_key.starts_with("kiwi_admin:") {
-            return Err(Error::Serialisation);
+            return Err(Error::serialisation());
         }
         consumed_key = consumed_key[11..].to_string();
 
@@ -31,6 +33,7 @@ pub struct RedisAccessToken {
     pub access_token: String,
     pub user_id: u32,
     pub sealing_key: String,
+    pub role: UserRole,
 }
 
 impl RedisItem for RedisAccessToken {
@@ -39,7 +42,7 @@ impl RedisItem for RedisAccessToken {
     }
 
     fn to_redis_value(&self) -> String {
-        self.user_id.to_string()
+        format!("{}:{}:{}", self.user_id, self.sealing_key, self.role)
     }
 
     fn get_expiration(&self) -> Option<Expiration> {
@@ -49,7 +52,7 @@ impl RedisItem for RedisAccessToken {
     fn from_redis_key_suffix_and_value(key_suffix: String, value: String) -> Result<Self, Error> {
         let mut consumed_key = key_suffix.clone();
         if !consumed_key.starts_with("access_token:") {
-            return Err(Error::Serialisation);
+            return Err(Error::serialisation());
         }
         consumed_key = consumed_key[13..].to_string();
 
@@ -57,15 +60,18 @@ impl RedisItem for RedisAccessToken {
 
         let user_id: u32 = values
             .first()
-            .ok_or(Error::Serialisation)?
+            .ok_or(Error::serialisation())?
             .parse()
-            .map_err(|_| Error::Serialisation)?;
-        let sealing_key = values.get(1).ok_or(Error::Serialisation)?.clone();
+            .map_err(|_| Error::serialisation())?;
+        let sealing_key = values.get(1).ok_or(Error::serialisation())?.clone();
+        let role_raw = values.get(2).ok_or(Error::serialisation())?.clone();
+        let role = UserRole::from_str(&role_raw)?;
 
         Ok(RedisAccessToken {
             access_token: consumed_key,
             user_id,
             sealing_key,
+            role,
         })
     }
 }
@@ -73,6 +79,7 @@ impl RedisItem for RedisAccessToken {
 pub struct RedisActiveRefreshToken {
     pub user_id: u32,
     pub sealing_key: String,
+    pub role: UserRole,
 }
 
 pub struct RedisRefreshedRefreshToken {
@@ -97,10 +104,12 @@ impl RedisItem for RedisRefreshToken {
 
     fn to_redis_value(&self) -> String {
         match &self.kind {
-            RedisRefreshTokenKind::Active(data) => format!("active:{}", data.user_id),
+            RedisRefreshTokenKind::Active(data) => {
+                format!("active:{}:{}:{}", data.user_id, data.sealing_key, data.role,)
+            }
             RedisRefreshTokenKind::Refreshed(data) => format!(
                 "refreshed:{}:{}",
-                data.fresh_access_token, data.fresh_refresh_token
+                data.fresh_access_token, data.fresh_refresh_token,
             ),
         }
     }
@@ -119,7 +128,7 @@ impl RedisItem for RedisRefreshToken {
     fn from_redis_key_suffix_and_value(key_suffix: String, value: String) -> Result<Self, Error> {
         let mut consumed_key = key_suffix.clone();
         if !consumed_key.starts_with("refresh_token:") {
-            return Err(Error::Serialisation);
+            return Err(Error::serialisation());
         }
         consumed_key = consumed_key[14..].to_string();
 
@@ -127,20 +136,23 @@ impl RedisItem for RedisRefreshToken {
 
         match values[0].as_str() {
             "active" => {
-                let raw_user_id = values.get(1).ok_or(Error::Serialisation)?;
-                let user_id: u32 = raw_user_id.parse().map_err(|_| Error::Serialisation)?;
-                let sealing_key = values.get(2).ok_or(Error::Serialisation)?.to_owned();
+                let raw_user_id = values.get(1).ok_or(Error::serialisation())?;
+                let user_id: u32 = raw_user_id.parse().map_err(|_| Error::serialisation())?;
+                let sealing_key = values.get(2).ok_or(Error::serialisation())?.to_owned();
+                let role_raw = values.get(2).ok_or(Error::serialisation())?.clone();
+                let role = UserRole::from_str(&role_raw)?;
                 Ok(RedisRefreshToken {
                     refresh_token: consumed_key,
                     kind: RedisRefreshTokenKind::Active(RedisActiveRefreshToken {
                         user_id,
                         sealing_key,
+                        role,
                     }),
                 })
             }
             "refreshed" => {
-                let fresh_access_token = values.get(1).ok_or(Error::Serialisation)?;
-                let fresh_refresh_token = values.get(2).ok_or(Error::Serialisation)?;
+                let fresh_access_token = values.get(1).ok_or(Error::serialisation())?;
+                let fresh_refresh_token = values.get(2).ok_or(Error::serialisation())?;
                 Ok(RedisRefreshToken {
                     refresh_token: consumed_key,
                     kind: RedisRefreshTokenKind::Refreshed(RedisRefreshedRefreshToken {
@@ -149,7 +161,7 @@ impl RedisItem for RedisRefreshToken {
                     }),
                 })
             }
-            _ => Err(Error::Serialisation),
+            _ => Err(Error::serialisation()),
         }
     }
 }

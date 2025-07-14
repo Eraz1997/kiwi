@@ -1,13 +1,14 @@
 use fred::prelude::{KeysInterface, TransactionInterface};
 
+use crate::error::Error;
 use crate::managers::redis::{
     RedisManager,
-    error::Error,
     models::{
         RedisAccessToken, RedisActiveRefreshToken, RedisItem, RedisRefreshToken,
         RedisRefreshTokenKind, RedisRefreshedRefreshToken,
     },
 };
+use crate::models::UserRole;
 
 impl RedisManager {
     pub async fn store_active_auth_tokens(
@@ -16,17 +17,20 @@ impl RedisManager {
         refresh_token: &str,
         user_id: u32,
         sealing_key: &str,
+        role: &UserRole,
     ) -> Result<(), Error> {
         let access_token_item = RedisAccessToken {
             access_token: access_token.to_string(),
             user_id,
             sealing_key: sealing_key.to_string(),
+            role: role.clone(),
         };
         let refresh_token_item = RedisRefreshToken {
             refresh_token: refresh_token.to_string(),
             kind: RedisRefreshTokenKind::Active(RedisActiveRefreshToken {
                 user_id,
                 sealing_key: sealing_key.to_string(),
+                role: role.clone(),
             }),
         };
 
@@ -62,6 +66,7 @@ impl RedisManager {
             access_token: access_token.to_string(),
             user_id: 0,
             sealing_key: String::new(),
+            role: UserRole::Customer,
         }
         .to_redis_key();
         let value: Option<String> = self.client.get(key.clone()).await?;
@@ -83,6 +88,7 @@ impl RedisManager {
             kind: RedisRefreshTokenKind::Active(RedisActiveRefreshToken {
                 user_id: 0,
                 sealing_key: String::new(),
+                role: UserRole::Customer,
             }),
         }
         .to_redis_key();
@@ -102,6 +108,7 @@ impl RedisManager {
         fresh_refresh_token: &str,
         user_id: u32,
         sealing_key: &str,
+        role: &UserRole,
     ) -> Result<(), Error> {
         let refreshed_refresh_token_item = RedisRefreshToken {
             refresh_token: old_refresh_token.to_string(),
@@ -114,12 +121,14 @@ impl RedisManager {
             access_token: fresh_access_token.to_string(),
             user_id,
             sealing_key: sealing_key.to_string(),
+            role: role.clone(),
         };
         let refresh_token_item = RedisRefreshToken {
             refresh_token: fresh_refresh_token.to_string(),
             kind: RedisRefreshTokenKind::Active(RedisActiveRefreshToken {
                 user_id,
                 sealing_key: sealing_key.to_string(),
+                role: role.clone(),
             }),
         };
 

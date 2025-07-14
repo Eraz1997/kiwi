@@ -1,9 +1,8 @@
 use axum::response::Response;
 use reqwest::{Body, Client};
 
-use crate::{managers::dev_frontend::error::Error, settings::Settings};
-
-pub mod error;
+use crate::error::Error;
+use crate::settings::Settings;
 
 #[derive(Clone)]
 pub struct DevFrontendManager {
