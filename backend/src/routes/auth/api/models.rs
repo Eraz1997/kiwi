@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Serialize, Deserialize)]
 pub struct LoginRequest {
@@ -20,5 +21,5 @@ pub struct GetSealingKeyResponse {
 pub struct CreateUserRequest {
     pub username: String,
     pub password_hash: String,
-    pub invitation_id: String,
+    pub invitation_id: Uuid,
 }

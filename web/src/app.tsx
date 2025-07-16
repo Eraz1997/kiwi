@@ -1,4 +1,5 @@
 import { useRouter } from "./contexts/router.jsx";
+import { CreateUser } from "./pages/createUser.jsx";
 import { Login } from "./pages/login.jsx";
 import { NotFound } from "./pages/notFound.jsx";
 import { Component, Match, Switch } from "solid-js";
@@ -10,10 +11,13 @@ export const App: Component = () => {
   return (
     <Box class="light">
       <Switch>
+        <Match when={currentPage() === "auth/create-user"}>
+          <CreateUser />
+        </Match>
         <Match when={currentPage() === "auth/login"}>
           <Login />
         </Match>
-        <Match when={currentPage() === "notFound"}>
+        <Match when={currentPage() === "internal/not-found"}>
           <NotFound />
         </Match>
       </Switch>

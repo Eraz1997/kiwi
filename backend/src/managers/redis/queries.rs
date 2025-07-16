@@ -15,7 +15,7 @@ impl RedisManager {
         &self,
         access_token: &str,
         refresh_token: &str,
-        user_id: u32,
+        user_id: i64,
         sealing_key: &str,
         role: &UserRole,
     ) -> Result<(), Error> {
@@ -106,7 +106,7 @@ impl RedisManager {
         old_refresh_token: &str,
         fresh_access_token: &str,
         fresh_refresh_token: &str,
-        user_id: u32,
+        user_id: i64,
         sealing_key: &str,
         role: &UserRole,
     ) -> Result<(), Error> {

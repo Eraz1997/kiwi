@@ -3,6 +3,8 @@ use axum::{
     http::{Uri, header::HOST},
 };
 
+use crate::constants::LOCALHOST_DOMAIN_WITH_COLON;
+
 pub fn subdomain_middleware(mut request: Request) -> Request {
     let subdomain = request
         .uri()
@@ -21,7 +23,9 @@ pub fn subdomain_middleware(mut request: Request) -> Request {
         .and_then(|host| {
             let host_value = host.to_string();
             let domains: Vec<&str> = host_value.split(".").collect();
-            if domains.len() == 3 || (domains.len() == 2 && domains[1].starts_with("localhost:")) {
+            if domains.len() == 3
+                || (domains.len() == 2 && domains[1].starts_with(LOCALHOST_DOMAIN_WITH_COLON))
+            {
                 Some(domains[0].to_string())
             } else {
                 None

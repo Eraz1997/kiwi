@@ -49,7 +49,13 @@ impl std::error::Error for Error {}
 
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
-        (self.code, self.message).into_response()
+        let message = if self.code == StatusCode::INTERNAL_SERVER_ERROR {
+            tracing::error!("{}", self);
+            "internal server error".to_string()
+        } else {
+            self.message
+        };
+        (self.code, message).into_response()
     }
 }
 

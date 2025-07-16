@@ -5,10 +5,14 @@ use axum::{Extension, Json, Router};
 use axum_extra::extract::CookieJar;
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use models::LoginRequest;
+use regex::Regex;
 use time::Duration;
 use urlencoding::decode;
+use zxcvbn::{Score, zxcvbn};
 
-use crate::constants::{ACCESS_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_NAME};
+use crate::constants::{
+    ACCESS_TOKEN_COOKIE_NAME, LOCALHOST_DOMAIN_WITH_COLON, REFRESH_TOKEN_COOKIE_NAME,
+};
 use crate::error::Error;
 use crate::extractors::{Domain, URIScheme};
 use crate::managers::crypto::CryptoManager;
@@ -22,6 +26,7 @@ use crate::routes::auth::api::models::{
 };
 
 mod constants;
+mod error;
 mod models;
 
 pub fn create_router() -> Router {
@@ -39,7 +44,17 @@ async fn create_user(
     Extension(db_manager): Extension<DbManager>,
     Extension(redis_manager): Extension<RedisManager>,
     Json(payload): Json<CreateUserRequest>,
-) -> Result<(), Error> {
+) -> Result<CookieJar, Error> {
+    let username_regex = Regex::new(r"^[a-zA-Z0-9.-_]{6,32}$")?;
+    if !username_regex.is_match(&payload.username) {
+        return Err(Error::invalid_username());
+    }
+
+    let password_score = zxcvbn(&payload.password_hash, &[&payload.username]);
+    if password_score.score() != Score::Four {
+        return Err(Error::invalid_password());
+    }
+
     let password_hash = crypto_manager.generate_hash(&payload.password_hash)?;
     let user_data = db_manager
         .create_user_from_invitation(&payload.invitation_id, &payload.username, &password_hash)
@@ -57,9 +72,7 @@ async fn create_user(
         user_data.role,
         None,
     )
-    .await?;
-
-    Ok(())
+    .await
 }
 
 async fn login(
@@ -69,7 +82,7 @@ async fn login(
     Extension(db_manager): Extension<DbManager>,
     Extension(redis_manager): Extension<RedisManager>,
     Json(payload): Json<LoginRequest>,
-) -> Result<(), Error> {
+) -> Result<CookieJar, Error> {
     let user_data = db_manager
         .get_user_data(&payload.username)
         .await?
@@ -92,9 +105,7 @@ async fn login(
         user_data.role,
         None,
     )
-    .await?;
-
-    Ok(())
+    .await
 }
 
 async fn refresh_credentials(
@@ -139,7 +150,7 @@ async fn refresh_credentials(
                 kind: RedisRefreshTokenKind::Active(data),
             })),
         ) => {
-            generate_and_store_tokens(
+            let cookie_jar = generate_and_store_tokens(
                 cookie_jar,
                 domain,
                 redis_manager,
@@ -149,7 +160,7 @@ async fn refresh_credentials(
                 Some(refresh_token),
             )
             .await?;
-            Redirect::temporary(&decoded_return_uri).into_response()
+            (cookie_jar, Redirect::temporary(&decoded_return_uri)).into_response()
         }
         (
             _,
@@ -162,13 +173,13 @@ async fn refresh_credentials(
                 .get_refresh_token_item(&data.fresh_refresh_token)
                 .await?;
             if new_refresh_token_item.is_some() {
-                set_auth_cookies(
+                let cookie_jar = set_auth_cookies(
                     cookie_jar,
                     domain,
                     data.fresh_access_token,
                     data.fresh_refresh_token,
                 );
-                Redirect::temporary(&decoded_return_uri).into_response()
+                (cookie_jar, Redirect::temporary(&decoded_return_uri)).into_response()
             } else {
                 erase_cookies_and_redirect_to_login(
                     cookie_jar,
@@ -228,11 +239,11 @@ async fn generate_and_store_tokens(
     cookie_jar: CookieJar,
     domain: String,
     redis_manager: RedisManager,
-    user_id: u32,
+    user_id: i64,
     sealing_key: String,
     role: UserRole,
     old_refresh_token: Option<String>,
-) -> Result<(), Error> {
+) -> Result<CookieJar, Error> {
     let access_token = Secret::default().get();
     let refresh_token = Secret::default().get();
 
@@ -253,9 +264,8 @@ async fn generate_and_store_tokens(
             .await?;
     }
 
-    set_auth_cookies(cookie_jar, domain, access_token, refresh_token);
-
-    Ok(())
+    let cookie_jar = set_auth_cookies(cookie_jar, domain, access_token, refresh_token);
+    Ok(cookie_jar)
 }
 
 fn set_auth_cookies(
@@ -263,17 +273,25 @@ fn set_auth_cookies(
     domain: String,
     access_token: String,
     refresh_token: String,
-) {
+) -> CookieJar {
+    let domain_parts: Vec<String> = domain.split(":").map(|value| value.to_string()).collect();
+    let domain_without_port = format!(".{}", domain_parts[0]);
+
     let mut access_token_cookie = auth_cookie(ACCESS_TOKEN_COOKIE_NAME.to_string(), access_token);
-    access_token_cookie.set_domain(domain);
+    access_token_cookie.set_domain(domain_without_port);
 
     let mut refresh_token_cookie =
         auth_cookie(REFRESH_TOKEN_COOKIE_NAME.to_string(), refresh_token);
     refresh_token_cookie.set_path("/api/refresh-credentials");
 
-    let _ = cookie_jar
+    if domain.starts_with(LOCALHOST_DOMAIN_WITH_COLON) {
+        access_token_cookie.set_secure(false);
+        refresh_token_cookie.set_secure(false);
+    }
+
+    cookie_jar
         .add(access_token_cookie)
-        .add(refresh_token_cookie);
+        .add(refresh_token_cookie)
 }
 
 fn erase_cookies_and_redirect_to_login(
@@ -289,7 +307,12 @@ fn erase_cookies_and_redirect_to_login(
         auth_cookie(REFRESH_TOKEN_COOKIE_NAME.to_string(), "".to_string());
     refresh_token_cookie.set_max_age(Duration::ZERO);
 
-    let _ = cookie_jar
+    if domain.starts_with(LOCALHOST_DOMAIN_WITH_COLON) {
+        access_token_cookie.set_secure(false);
+        refresh_token_cookie.set_secure(false);
+    }
+
+    let cookie_jar = cookie_jar
         .add(access_token_cookie)
         .add(refresh_token_cookie);
 
@@ -299,5 +322,5 @@ fn erase_cookies_and_redirect_to_login(
         "{}/login?return_uri={}",
         redirect_uri_prefix, encoded_return_uri
     );
-    Redirect::to(&redirect_uri).into_response()
+    (cookie_jar, Redirect::to(&redirect_uri)).into_response()
 }

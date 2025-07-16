@@ -31,7 +31,7 @@ pub trait RedisItem: Sized {
 
 pub struct RedisAccessToken {
     pub access_token: String,
-    pub user_id: u32,
+    pub user_id: i64,
     pub sealing_key: String,
     pub role: UserRole,
 }
@@ -58,7 +58,7 @@ impl RedisItem for RedisAccessToken {
 
         let values: Vec<String> = value.split(":").map(|value| value.to_string()).collect();
 
-        let user_id: u32 = values
+        let user_id: i64 = values
             .first()
             .ok_or(Error::serialisation())?
             .parse()
@@ -77,7 +77,7 @@ impl RedisItem for RedisAccessToken {
 }
 
 pub struct RedisActiveRefreshToken {
-    pub user_id: u32,
+    pub user_id: i64,
     pub sealing_key: String,
     pub role: UserRole,
 }
@@ -137,7 +137,7 @@ impl RedisItem for RedisRefreshToken {
         match values[0].as_str() {
             "active" => {
                 let raw_user_id = values.get(1).ok_or(Error::serialisation())?;
-                let user_id: u32 = raw_user_id.parse().map_err(|_| Error::serialisation())?;
+                let user_id: i64 = raw_user_id.parse().map_err(|_| Error::serialisation())?;
                 let sealing_key = values.get(2).ok_or(Error::serialisation())?.to_owned();
                 let role_raw = values.get(2).ok_or(Error::serialisation())?.clone();
                 let role = UserRole::from_str(&role_raw)?;

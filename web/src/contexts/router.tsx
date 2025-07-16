@@ -9,7 +9,7 @@ import {
 
 // Types
 
-export type Page = "auth/login" | "notFound";
+export type Page = "auth/login" | "auth/create-user" | "internal/not-found";
 
 type QueryParams = {
   [index: string]: string;
@@ -71,11 +71,7 @@ export const useRouter = () => {
 
 const getDomainFromLocation = (location: Location): string => {
   const domains = location.host.split(".");
-  if (
-    domains.length !== 3 &&
-    domains.length !== 2 &&
-    !domains[domains.length - 1].startsWith("localhost:")
-  ) {
+  if (domains.length !== 3) {
     throw "invalid domain";
   }
   return domains.toSpliced(0, 1).join(".");
@@ -90,7 +86,10 @@ const getPageFromLocation = (location: Location): Page => {
   if (subdomain === "auth" && path === "/login") {
     return "auth/login";
   }
-  return "notFound";
+  if (subdomain === "auth" && path === "/create-user") {
+    return "auth/create-user";
+  }
+  return "internal/not-found";
 };
 
 const getQueryParamsFromLocation = (location: Location): QueryParams => {
@@ -111,7 +110,5 @@ const getQueryParamsFromLocation = (location: Location): QueryParams => {
 
 const isLocalhostFromLocation = (location: Location): boolean => {
   const domain = getDomainFromLocation(location);
-  const domains = domain.split(".");
-  const tld = domains[domains.length - 1];
-  return tld.startsWith("localhost:");
+  return domain.startsWith("kiwi-local.com:");
 };

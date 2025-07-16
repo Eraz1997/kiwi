@@ -3,6 +3,8 @@ use axum::{
     http::{StatusCode, header::HOST, request::Parts},
 };
 
+use crate::constants::LOCALHOST_DOMAIN_WITH_COLON;
+
 pub struct Domain(pub String);
 
 impl<State> FromRequestParts<State> for Domain
@@ -26,7 +28,7 @@ where
         let host_domains: Vec<&str> = host_value.split(".").collect();
         if host_domains.is_empty() {
             Err((StatusCode::BAD_REQUEST, "invalid host".to_string()))
-        } else if host_domains[host_domains.len() - 1].starts_with("localhost:") {
+        } else if host_domains[host_domains.len() - 1].starts_with(LOCALHOST_DOMAIN_WITH_COLON) {
             Ok(Domain(host_domains[host_domains.len() - 1].to_string()))
         } else {
             Ok(Domain(host_domains[host_domains.len() - 2..].join(".")))

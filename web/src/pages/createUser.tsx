@@ -1,5 +1,5 @@
 import { Container } from "../../styled-system/jsx/container";
-import { CircleSlash, PartyPopper, Rocket } from "lucide-solid";
+import { Atom, CircleSlash, Sparkle } from "lucide-solid";
 import { Component, Match, Show, Switch, createSignal } from "solid-js";
 import { Alert } from "src/components/ui/alert";
 import { Button } from "src/components/ui/button";
@@ -17,44 +17,38 @@ import {
 } from "src/hooks/createValidatedSignal";
 import { VStack } from "styled-system/jsx";
 
-type LoginError = "unknown" | "bad credentials";
+type CreationError = "unknown" | "bad invitation" | "invalid credentials";
 
-export const Login: Component = () => {
+export const CreateUser: Component = () => {
   const [username, setUsername, isUsernameValid] =
     createValidatedSignal<string>(USERNAME_VALIDATOR, "");
   const [password, setPassword, isPasswordValid] =
     createValidatedSignal<string>(PASSWORD_VALIDATOR, "");
-  const [error, setError] = createSignal<LoginError | null>();
+  const [error, setError] = createSignal<CreationError | null>();
   const [success, setSuccess] = createSignal(false);
 
   const authBackendClient = createBackendClient("auth");
   const credentialsClient = createCredentialsClient();
   const { queryParams } = useRouter();
 
-  const { isLoading, call: signIn } = createAsyncAction(async () => {
+  const { isLoading, call: createUser } = createAsyncAction(async () => {
     const passwordHash =
       await credentialsClient.getLoginPasswordHash(password());
 
-    const result = await authBackendClient.post("/login", {
+    const result = await authBackendClient.post("/create-user", {
       username: username(),
       password_hash: passwordHash,
+      invitation_id: queryParams().invitation_id,
     });
 
     if (result.statusCode === 401) {
-      setError("bad credentials");
+      setError("bad invitation");
+    } else if (result.statusCode === 400) {
+      setError("invalid credentials");
     } else if (result.statusCode >= 400) {
       setError("unknown");
     } else {
-      const returnUri = queryParams().return_uri;
-      await credentialsClient.storeAndSealLocalEncryptionKey(
-        username(),
-        password(),
-      );
-      if (returnUri) {
-        window.location.replace(returnUri);
-      } else {
-        setSuccess(true);
-      }
+      setSuccess(true);
       setError(null);
     }
   });
@@ -67,12 +61,13 @@ export const Login: Component = () => {
           <Alert.Root borderColor="lime.default">
             <Alert.Icon
               color="lime.text"
-              asChild={(iconProps) => <PartyPopper {...iconProps()} />}
+              asChild={(iconProps) => <Sparkle {...iconProps()} />}
             />
             <Alert.Content>
-              <Alert.Title color="lime.text">Signed in</Alert.Title>
+              <Alert.Title color="lime.text">User Created</Alert.Title>
               <Alert.Description color="lime.text">
-                You can now visit Kiwi services!
+                Your user has been created and you are now logged in. Go visit
+                Kiwi services!
               </Alert.Description>
             </Alert.Content>
           </Alert.Root>
@@ -87,7 +82,10 @@ export const Login: Component = () => {
               <Alert.Title color="red.text">Access denied</Alert.Title>
               <Alert.Description color="red.text">
                 <Switch>
-                  <Match when={error() === "bad credentials"}>
+                  <Match when={error() === "bad invitation"}>
+                    The invitation code is invalid.
+                  </Match>
+                  <Match when={error() === "invalid credentials"}>
                     The credentials you submitted are invalid.
                   </Match>
                   <Match when={error() === "unknown"}>
@@ -100,9 +98,9 @@ export const Login: Component = () => {
         </Show>
         <Card.Root>
           <Card.Header>
-            <Card.Title>Sign In</Card.Title>
+            <Card.Title>Create User</Card.Title>
             <Card.Description>
-              Insert your username and password to sign in to Kiwi.
+              Choose a username and a password for your Kiwi account.
             </Card.Description>
           </Card.Header>
           <Card.Body>
@@ -134,10 +132,10 @@ export const Login: Component = () => {
             <Button
               loading={isLoading()}
               disabled={!isUsernameValid() || !isPasswordValid() || success()}
-              onClick={() => signIn()}
+              onClick={() => createUser()}
             >
-              Sign In
-              <Rocket />
+              Create User
+              <Atom />
             </Button>
           </Card.Footer>
         </Card.Root>

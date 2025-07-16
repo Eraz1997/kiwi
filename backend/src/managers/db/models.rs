@@ -5,7 +5,7 @@ use crate::error::Error;
 use crate::models::UserRole;
 
 pub struct UserData {
-    pub id: u32,
+    pub id: i64,
     pub password_hash: String,
     pub role: UserRole,
 }

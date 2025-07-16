@@ -60,10 +60,12 @@ async fn main() -> Result<(), Error> {
     let redis_manager = RedisManager::new(&redis_admin_password).await?;
     let dev_frontend_manager = DevFrontendManager::new(&settings)?;
 
-    let invitation = db_manager.create_admin_invitation_if_no_admin_yet().await?;
+    let invitation = db_manager
+        .get_or_create_admin_invitation_if_no_admin_yet()
+        .await?;
     if let Some(invitation) = invitation {
         tracing::warn!(
-            "admin user not found. invitation created with ID: {}. please visit auth.<your-domain>/create-user?invitationId={}",
+            "admin user not found. invitation created with ID: {}. please visit auth.<your-domain>/create-user?invitation_id={}",
             invitation.id,
             invitation.id
         );
