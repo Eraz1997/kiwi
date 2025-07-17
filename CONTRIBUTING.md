@@ -72,5 +72,5 @@ pnpm format
 
 ```sh
 cargo fmt
-cargo clippy
+cargo clippy -- --deny warnings
 ```

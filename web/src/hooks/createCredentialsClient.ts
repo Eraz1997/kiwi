@@ -37,7 +37,7 @@ export const createCredentialsClient = (): CredentialsClient => {
     const localEncryptionKey = await argon2.hash({
       pass: password,
       hashLen: 64,
-      time: 600_000,
+      time: 3,
       mem: 65_536,
       parallelism: 1,
       salt: "local-encryption-key",
