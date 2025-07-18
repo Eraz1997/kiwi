@@ -14,7 +14,8 @@ pub struct RefreshCredentialsQuery {
 
 #[derive(Serialize, Deserialize)]
 pub struct GetSealingKeyResponse {
-    pub sealing_key: String,
+    pub key: String,
+    pub iv: String,
 }
 
 #[derive(Serialize, Deserialize)]

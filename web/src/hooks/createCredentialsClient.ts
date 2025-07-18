@@ -1,9 +1,10 @@
 import { createBackendClient } from "./createBackendClient";
 import argon2 from "argon2-browser/dist/argon2-bundled.min.js";
+import forge from "node-forge";
 
 const LOCAL_ENCRYPTION_KEY_LOCAL_STORAGE_ITEM =
   "_kiwi_sealed_local_encryption_key";
-const SHARED_IV = "_kiwi_shared_iv_";
+const ENCRYPTION_VALIDATION_SUFFIX = ":_kiwi_valid_decrypted_key";
 
 type CredentialsClient = {
   getLoginPasswordHash: (password: string) => Promise<string>;
@@ -46,22 +47,22 @@ export const createCredentialsClient = (): CredentialsClient => {
     });
 
     const { jsonPayload } = await authBackendClient.get("/sealing-key");
-    const { sealing_key: sealingKey } = jsonPayload;
-    const sealedEncryptionKey = await window.crypto.subtle.encrypt(
-      {
-        name: "AES-CBC",
-        iv: textEncoder.encode(SHARED_IV),
-      },
-      sealingKey,
-      textEncoder.encode(localEncryptionKey.hashHex),
+    const { key, iv } = jsonPayload;
+    const textToEncrypt = `${localEncryptionKey.hashHex}${ENCRYPTION_VALIDATION_SUFFIX}`;
+
+    const cipher = forge.cipher.createCipher(
+      "AES-CBC",
+      forge.util.createBuffer(key),
     );
-    const hexSealedEncryptionKey = window.btoa(
-      String.fromCharCode(...new Uint8Array(sealedEncryptionKey)),
-    );
+    cipher.start({ iv: forge.util.createBuffer(iv) });
+    cipher.update(forge.util.createBuffer(textToEncrypt));
+    cipher.finish();
+
+    const sealedEncryptionKey = cipher.output.toHex();
 
     window.localStorage.setItem(
       LOCAL_ENCRYPTION_KEY_LOCAL_STORAGE_ITEM,
-      hexSealedEncryptionKey,
+      sealedEncryptionKey,
     );
   };
 

@@ -13,6 +13,15 @@ pub struct Secret {
 }
 
 impl Secret {
+    pub fn generate(length: usize) -> Self {
+        let value = rand::rng()
+            .sample_iter(&Alphanumeric)
+            .take(length)
+            .map(char::from)
+            .collect();
+        Self { value }
+    }
+
     pub fn get(&self) -> String {
         self.value.clone()
     }
@@ -20,12 +29,7 @@ impl Secret {
 
 impl Default for Secret {
     fn default() -> Self {
-        let value = rand::rng()
-            .sample_iter(&Alphanumeric)
-            .take(64)
-            .map(char::from)
-            .collect();
-        Self { value }
+        Self::generate(64)
     }
 }
 

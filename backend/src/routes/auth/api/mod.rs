@@ -61,7 +61,7 @@ async fn create_user(
         .await?
         .ok_or(Error::bad_credentials())?;
 
-    let sealing_key = Secret::default().get();
+    let sealing_key = Secret::generate(32 + 16).get(); // AES-CBC key + iv
 
     generate_and_store_tokens(
         cookie_jar,
@@ -94,7 +94,7 @@ async fn login(
         Err(Error::bad_credentials())?
     }
 
-    let sealing_key = Secret::default().get();
+    let sealing_key = Secret::generate(32 + 16).get(); // AES-CBC key + iv
 
     generate_and_store_tokens(
         cookie_jar,
@@ -216,8 +216,11 @@ async fn get_sealing_key(
     }?;
 
     if let Some(access_token_item) = access_token_item {
+        let key = &access_token_item.sealing_key[..32];
+        let iv = &access_token_item.sealing_key[32..];
         Ok(Json(GetSealingKeyResponse {
-            sealing_key: access_token_item.sealing_key,
+            key: key.to_string(),
+            iv: iv.to_string(),
         }))
     } else {
         Err(Error::bad_credentials())
