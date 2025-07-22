@@ -7,7 +7,7 @@ type ParsedResponse = {
   text: string | null;
 };
 
-type Service = "auth";
+type Service = "auth" | "admin";
 
 type BackendClient = {
   get: (path: string) => Promise<ParsedResponse>;

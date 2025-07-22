@@ -33,7 +33,7 @@ impl Default for Secret {
     }
 }
 
-#[derive(Clone, Debug, FromSql, ToSql)]
+#[derive(Clone, Debug, FromSql, ToSql, Serialize, Deserialize)]
 #[postgres(name = "user_role")]
 pub enum UserRole {
     Admin,

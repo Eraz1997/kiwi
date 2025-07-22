@@ -4,12 +4,20 @@ import {
   JSX,
   createContext,
   createSignal,
+  onCleanup,
+  onMount,
   useContext,
 } from "solid-js";
 
 // Types
 
-export type Page = "auth/login" | "auth/create-user" | "internal/not-found";
+export type Page =
+  | "auth/login"
+  | "auth/create-user"
+  | "internal/not-found"
+  | "admin"
+  | "admin/users"
+  | "admin/services";
 
 type QueryParams = {
   [index: string]: string;
@@ -20,6 +28,7 @@ type Router = {
   domain: Accessor<string>;
   queryParams: Accessor<QueryParams>;
   isLocalhost: Accessor<boolean>;
+  navigate: (page: Page, queryParams?: QueryParams) => void;
 };
 
 type Props = {
@@ -36,10 +45,41 @@ export const RouterProvider: Component<Props> = (props) => {
   const initialDomain = getDomainFromLocation(window.location);
   const initialLocalhost = isLocalhostFromLocation(window.location);
 
-  const [domain] = createSignal(initialDomain);
-  const [currentPage] = createSignal<Page>(initialPage);
-  const [queryParams] = createSignal<QueryParams>(initialQueryParams);
-  const [isLocalhost] = createSignal(initialLocalhost);
+  const [domain, setDomain] = createSignal(initialDomain);
+  const [currentPage, setCurrentPage] = createSignal<Page>(initialPage);
+  const [queryParams, setQueryParams] =
+    createSignal<QueryParams>(initialQueryParams);
+  const [isLocalhost, setIsLocalHost] = createSignal(initialLocalhost);
+
+  const urlChangeEventListener = () => {
+    setCurrentPage(getPageFromLocation(window.location));
+    setQueryParams(getQueryParamsFromLocation(window.location));
+    setDomain(getDomainFromLocation(window.location));
+    setIsLocalHost(isLocalhostFromLocation(window.location));
+  };
+
+  onMount(() => {
+    window.addEventListener("popstate", urlChangeEventListener);
+  });
+
+  onCleanup(() => {
+    window.removeEventListener("popstate", urlChangeEventListener);
+  });
+
+  const navigate = (page: Page, queryParams?: QueryParams) => {
+    const pageParts = page.split("/");
+    const service = pageParts[0];
+    const path = pageParts.length > 1 ? pageParts.slice(1).join("/") : "";
+    const scheme = isLocalhost() ? "http://" : "https://";
+    const encodedQueryParams = queryParams
+      ? `?${encodeQueryParams(queryParams)}`
+      : "";
+    const url = `${scheme}${service}.${domain()}/${path}${encodedQueryParams}`;
+    window.history.pushState(null, "", url);
+
+    setCurrentPage(page);
+    setQueryParams(queryParams ?? {});
+  };
 
   return (
     <RouterContext.Provider
@@ -48,6 +88,7 @@ export const RouterProvider: Component<Props> = (props) => {
         domain,
         queryParams,
         isLocalhost,
+        navigate,
       }}
     >
       {props.children}
@@ -89,6 +130,15 @@ const getPageFromLocation = (location: Location): Page => {
   if (subdomain === "auth" && path === "/create-user") {
     return "auth/create-user";
   }
+  if (subdomain === "admin" && (!path || path === "/")) {
+    return "admin";
+  }
+  if (subdomain === "admin" && path === "/users") {
+    return "admin/users";
+  }
+  if (subdomain === "admin" && path === "/services") {
+    return "admin/services";
+  }
   return "internal/not-found";
 };
 
@@ -106,6 +156,15 @@ const getQueryParamsFromLocation = (location: Location): QueryParams => {
     queryParams[key] = value;
     return queryParams;
   }, initialisedQueryParams);
+};
+
+const encodeQueryParams = (queryParams: QueryParams): string => {
+  return Object.entries(queryParams)
+    .map(
+      ([key, value]) =>
+        `${encodeURIComponent(key)}=${encodeURIComponent(value)}`,
+    )
+    .join("&");
 };
 
 const isLocalhostFromLocation = (location: Location): boolean => {

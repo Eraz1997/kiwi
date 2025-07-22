@@ -20,6 +20,18 @@ impl DbManager {
         Ok(user_data)
     }
 
+    pub async fn get_users_data(&self) -> Result<Vec<UserData>, Error> {
+        let client = self.connection_pool.get().await?;
+        let statement = client.prepare_cached("SELECT * FROM users").await?;
+        let users: Result<Vec<UserData>, Error> = client
+            .query(&statement, &[])
+            .await?
+            .into_iter()
+            .map(UserData::try_from)
+            .collect();
+        users
+    }
+
     pub async fn get_or_create_admin_invitation_if_no_admin_yet(
         &self,
     ) -> Result<Option<UserInvitation>, Error> {

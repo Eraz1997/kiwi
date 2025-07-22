@@ -1,4 +1,4 @@
-import { Container } from "../../styled-system/jsx/container";
+import { Container } from "../../../styled-system/jsx/container";
 import { Atom, CircleSlash, Sparkle } from "lucide-solid";
 import { Component, Match, Show, Switch, createSignal } from "solid-js";
 import { Alert } from "src/components/ui/alert";

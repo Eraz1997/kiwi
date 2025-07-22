@@ -28,8 +28,6 @@ where
         let host_domains: Vec<&str> = host_value.split(".").collect();
         if host_domains.is_empty() {
             Err((StatusCode::BAD_REQUEST, "invalid host".to_string()))
-        } else if host_domains[host_domains.len() - 1].starts_with(LOCALHOST_DOMAIN_WITH_COLON) {
-            Ok(Domain(host_domains[host_domains.len() - 1].to_string()))
         } else {
             Ok(Domain(host_domains[host_domains.len() - 2..].join(".")))
         }
@@ -44,12 +42,13 @@ where
 {
     type Rejection = (StatusCode, String);
 
-    async fn from_request_parts(parts: &mut Parts, _: &State) -> Result<Self, Self::Rejection> {
-        let scheme = parts
-            .uri
-            .scheme()
-            .map(|scheme| scheme.to_string())
-            .unwrap_or_default();
+    async fn from_request_parts(parts: &mut Parts, state: &State) -> Result<Self, Self::Rejection> {
+        let Domain(domain) = Domain::from_request_parts(parts, state).await?;
+        let scheme = if domain.starts_with(LOCALHOST_DOMAIN_WITH_COLON) {
+            "http://".to_string()
+        } else {
+            "https://".to_string()
+        };
         Ok(URIScheme(scheme))
     }
 }

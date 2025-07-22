@@ -1,4 +1,4 @@
-import { Container } from "../../styled-system/jsx/container";
+import { Container } from "../../../styled-system/jsx/container";
 import { Squirrel } from "lucide-solid";
 import { Component } from "solid-js";
 import { Card } from "src/components/ui/card";

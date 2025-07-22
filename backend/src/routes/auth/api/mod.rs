@@ -282,6 +282,7 @@ fn set_auth_cookies(
 
     let mut access_token_cookie = auth_cookie(ACCESS_TOKEN_COOKIE_NAME.to_string(), access_token);
     access_token_cookie.set_domain(domain_without_port);
+    access_token_cookie.set_path("/");
 
     let mut refresh_token_cookie =
         auth_cookie(REFRESH_TOKEN_COOKIE_NAME.to_string(), refresh_token);
@@ -303,7 +304,12 @@ fn erase_cookies_and_redirect_to_login(
     domain: String,
     uri_scheme: String,
 ) -> Response {
+    let domain_parts: Vec<String> = domain.split(":").map(|value| value.to_string()).collect();
+    let domain_without_port = format!(".{}", domain_parts[0]);
+
     let mut access_token_cookie = auth_cookie(ACCESS_TOKEN_COOKIE_NAME.to_string(), "".to_string());
+    access_token_cookie.set_domain(domain_without_port);
+    access_token_cookie.set_path("/");
     access_token_cookie.set_max_age(Duration::ZERO);
 
     let mut refresh_token_cookie =

@@ -8,6 +8,7 @@ pub struct UserData {
     pub id: i64,
     pub password_hash: String,
     pub role: UserRole,
+    pub username: String,
 }
 
 impl TryFrom<Row> for UserData {
@@ -18,6 +19,7 @@ impl TryFrom<Row> for UserData {
             id: value.try_get("id")?,
             password_hash: value.try_get("password_hash")?,
             role: value.try_get("role")?,
+            username: value.try_get("username")?,
         })
     }
 }
