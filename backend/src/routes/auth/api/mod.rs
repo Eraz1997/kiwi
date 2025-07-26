@@ -128,17 +128,12 @@ async fn refresh_credentials(
     let decoded_return_uri = decode(&payload.return_uri)
         .map_err(|_| Error::serialisation())?
         .to_string();
-    if !decoded_return_uri.starts_with("https://") {
-        return Err(Error::bad_return_uri());
-    }
-    let return_uri_domain: Option<String> = decoded_return_uri[8..]
-        .split("/")
-        .map(|part| part.to_string())
-        .next();
-    if return_uri_domain
-        .filter(|return_uri_domain| return_uri_domain.ends_with(&domain))
-        .is_none()
-    {
+    let return_uri_domain = decoded_return_uri
+        .strip_prefix(&uri_scheme)
+        .and_then(|uri_domain| uri_domain.split("/").next())
+        .ok_or(Error::bad_return_uri())?
+        .to_string();
+    if !return_uri_domain.ends_with(&domain) {
         return Err(Error::bad_return_uri());
     }
 

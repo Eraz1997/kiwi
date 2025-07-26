@@ -139,7 +139,7 @@ impl RedisItem for RedisRefreshToken {
                 let raw_user_id = values.get(1).ok_or(Error::serialisation())?;
                 let user_id: i64 = raw_user_id.parse().map_err(|_| Error::serialisation())?;
                 let sealing_key = values.get(2).ok_or(Error::serialisation())?.to_owned();
-                let role_raw = values.get(2).ok_or(Error::serialisation())?.clone();
+                let role_raw = values.get(3).ok_or(Error::serialisation())?.clone();
                 let role = UserRole::from_str(&role_raw)?;
                 Ok(RedisRefreshToken {
                     refresh_token: consumed_key,

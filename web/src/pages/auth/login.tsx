@@ -29,7 +29,7 @@ export const Login: Component = () => {
 
   const authBackendClient = createBackendClient("auth");
   const credentialsClient = createCredentialsClient();
-  const { queryParams } = useRouter();
+  const { queryParams, isValidReturnUri } = useRouter();
 
   const { isLoading, call: signIn } = createAsyncAction(async () => {
     const passwordHash =
@@ -50,7 +50,7 @@ export const Login: Component = () => {
         username(),
         password(),
       );
-      if (returnUri) {
+      if (returnUri && isValidReturnUri(returnUri)) {
         window.location.replace(returnUri);
       } else {
         setSuccess(true);

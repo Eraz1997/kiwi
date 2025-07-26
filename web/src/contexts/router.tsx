@@ -29,6 +29,7 @@ type Router = {
   queryParams: Accessor<QueryParams>;
   isLocalhost: Accessor<boolean>;
   navigate: (page: Page, queryParams?: QueryParams) => void;
+  isValidReturnUri: (returnUri: string) => boolean;
 };
 
 type Props = {
@@ -81,6 +82,27 @@ export const RouterProvider: Component<Props> = (props) => {
     setQueryParams(queryParams ?? {});
   };
 
+  const isValidReturnUri = (returnUri: string) => {
+    const scheme = isLocalhost() ? "http://" : "https://";
+    if (!returnUri.startsWith(scheme)) {
+      return false;
+    }
+
+    const uriParts = returnUri.substring(0, scheme.length).split("/");
+    if (!uriParts.length) {
+      return false;
+    }
+
+    const host = uriParts[0];
+    const domains = host.split(".");
+    if (domains.length !== 3) {
+      return false;
+    }
+
+    const returnDomain = domains.toSpliced(0, 1).join(".");
+    return returnDomain === domain();
+  };
+
   return (
     <RouterContext.Provider
       value={{
@@ -89,6 +111,7 @@ export const RouterProvider: Component<Props> = (props) => {
         queryParams,
         isLocalhost,
         navigate,
+        isValidReturnUri,
       }}
     >
       {props.children}
@@ -122,7 +145,11 @@ const getPageFromLocation = (location: Location): Page => {
   const domain = getDomainFromLocation(location);
   const subdomain = location.host.replace(`.${domain}`, "");
   const parts = location.href.split(location.host);
-  const path = parts[parts.length - 1].split("?")[0];
+  const path = parts[parts.length - 1]
+    .split("?")[0]
+    .split("/")
+    .filter((part, index) => !!part || index === 0)
+    .join("/");
 
   if (subdomain === "auth" && path === "/login") {
     return "auth/login";

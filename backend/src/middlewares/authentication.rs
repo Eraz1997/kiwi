@@ -1,6 +1,6 @@
 use axum::{
     Extension,
-    extract::{OriginalUri, Request},
+    extract::Request,
     http::HeaderValue,
     middleware::Next,
     response::{IntoResponse, Redirect, Response},
@@ -11,7 +11,7 @@ use urlencoding::encode;
 use crate::{
     constants::{ACCESS_TOKEN_COOKIE_NAME, KIWI_USER_ID_HEADER_NAME},
     error::Error,
-    extractors::{Domain, URIScheme},
+    extractors::{Domain, FullOriginalUri, URIScheme},
     managers::redis::RedisManager,
     models::UserRole,
 };
@@ -21,7 +21,7 @@ pub async fn authentication_middleware(
     cookie_jar: CookieJar,
     Domain(domain): Domain,
     URIScheme(uri_scheme): URIScheme,
-    original_uri: OriginalUri,
+    FullOriginalUri(original_uri): FullOriginalUri,
     mut request: Request,
     next: Next,
 ) -> Response {

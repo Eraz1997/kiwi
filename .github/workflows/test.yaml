@@ -33,7 +33,7 @@ jobs:
           pnpm install
           pnpm prettier . --check
           pnpm eslint .
-          pnpm tsc
+          pnpm tsc --project tsconfig.lint.json
           cd ..
 
       - name: Lint Backend
