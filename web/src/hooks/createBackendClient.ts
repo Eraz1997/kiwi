@@ -12,6 +12,7 @@ type Service = "auth" | "admin";
 type BackendClient = {
   get: (path: string) => Promise<ParsedResponse>;
   post: (path: string, body?: unknown) => Promise<ParsedResponse>;
+  delete: (path: string, body?: unknown) => Promise<ParsedResponse>;
 };
 
 export const createBackendClient = (service: Service): BackendClient => {
@@ -53,5 +54,6 @@ export const createBackendClient = (service: Service): BackendClient => {
   return {
     get: async (path) => await request(path, "GET"),
     post: async (path, body) => await request(path, "POST", body),
+    delete: async (path, body) => await request(path, "DELETE", body),
   };
 };

@@ -20,6 +20,19 @@ impl DbManager {
         Ok(user_data)
     }
 
+    pub async fn get_user_data_from_id(&self, id: &i64) -> Result<Option<UserData>, Error> {
+        let client = self.connection_pool.get().await?;
+        let statement = client
+            .prepare_cached("SELECT * FROM users WHERE id = $1")
+            .await?;
+        let user_data: Option<UserData> = client
+            .query_opt(&statement, &[id])
+            .await?
+            .map(UserData::try_from)
+            .and_then(Result::ok);
+        Ok(user_data)
+    }
+
     pub async fn get_users_data(&self) -> Result<Vec<UserData>, Error> {
         let client = self.connection_pool.get().await?;
         let statement = client.prepare_cached("SELECT * FROM users").await?;
@@ -30,6 +43,15 @@ impl DbManager {
             .map(UserData::try_from)
             .collect();
         users
+    }
+
+    pub async fn delete_user(&self, username: &String) -> Result<(), Error> {
+        let client = self.connection_pool.get().await?;
+        let statement = client
+            .prepare_cached("DELETE FROM users WHERE username = $1")
+            .await?;
+        client.execute(&statement, &[username]).await?;
+        Ok(())
     }
 
     pub async fn get_or_create_admin_invitation_if_no_admin_yet(

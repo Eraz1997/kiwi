@@ -1,12 +1,22 @@
+import { Avatar } from "./ui/avatar";
 import { Button } from "./ui/button";
-import { ChevronLeft } from "lucide-solid";
-import { Component } from "solid-js";
+import { Menu } from "./ui/menu";
+import { ChevronLeft, LogOutIcon } from "lucide-solid";
+import { Component, createResource } from "solid-js";
 import { Heading } from "src/components/ui/heading";
 import { Page, useRouter } from "src/contexts/router";
+import { createBackendClient } from "src/hooks/createBackendClient";
 import { HStack, Spacer } from "styled-system/jsx";
 
 export const NavigationBar: Component = () => {
   const { currentPage, navigate } = useRouter();
+  const adminClient = createBackendClient("admin");
+
+  const [user] = createResource<User>(async () => {
+    const { jsonPayload: user } = await adminClient.get("/me");
+    return user;
+  });
+
   const title = () => {
     if (currentPage() === "admin") {
       return "Home";
@@ -17,6 +27,7 @@ export const NavigationBar: Component = () => {
     if (currentPage() === "admin/services") {
       return "Services";
     }
+    return "";
   };
   const backPage = (): Page | null => {
     if (currentPage() === "admin/users") {
@@ -63,6 +74,36 @@ export const NavigationBar: Component = () => {
         </HStack>
         <Spacer />
         <Heading size="xl">{title()}</Heading>
+        <Menu.Root>
+          <Menu.Trigger
+            asChild={(triggerProps) => (
+              <Avatar
+                {...triggerProps}
+                cursor="pointer"
+                name={user()?.username ?? ""}
+              />
+            )}
+          />
+          <Menu.Positioner>
+            <Menu.Content>
+              <Menu.ItemGroup>
+                <Menu.ItemGroupLabel>
+                  {user()?.username ?? "No Account"}
+                </Menu.ItemGroupLabel>
+                <Menu.Separator />
+                <Menu.Item
+                  value="logout"
+                  onClick={() => navigate("auth/logout")}
+                >
+                  <HStack gap="2">
+                    <LogOutIcon />
+                    Logout
+                  </HStack>
+                </Menu.Item>
+              </Menu.ItemGroup>
+            </Menu.Content>
+          </Menu.Positioner>
+        </Menu.Root>
       </HStack>
       <HStack height="16" />
     </>

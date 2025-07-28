@@ -1,6 +1,6 @@
 /* @refresh reload */
-import { App } from "./app.jsx";
-import { RouterProvider } from "./contexts/router.jsx";
+import { App } from "./app";
+import { RouterProvider } from "./contexts/router";
 import "./index.css";
 import { render } from "solid-js/web";
 

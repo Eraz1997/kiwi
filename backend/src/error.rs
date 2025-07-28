@@ -37,6 +37,13 @@ impl Error {
             message: "serialisation failed".to_string(),
         }
     }
+
+    pub fn unauthorised() -> Self {
+        Self {
+            code: StatusCode::UNAUTHORIZED,
+            message: "something went wrong with your credentials".to_string(),
+        }
+    }
 }
 
 impl Display for Error {

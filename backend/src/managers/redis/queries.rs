@@ -101,6 +101,7 @@ impl RedisManager {
         };
         Ok(refresh_token_item)
     }
+
     pub async fn store_refreshed_auth_tokens(
         &self,
         old_refresh_token: &str,
@@ -162,6 +163,21 @@ impl RedisManager {
             .await?;
         let _: () = transaction.exec(true).await?;
 
+        Ok(())
+    }
+
+    pub async fn erase_refresh_token(&self, refresh_token: &str) -> Result<(), Error> {
+        let key = RedisRefreshToken {
+            refresh_token: refresh_token.to_string(),
+            kind: RedisRefreshTokenKind::Active(RedisActiveRefreshToken {
+                user_id: 0,
+                sealing_key: String::new(),
+                role: UserRole::Customer,
+            }),
+        }
+        .to_redis_key();
+
+        let _: () = self.client.del(key).await?;
         Ok(())
     }
 }

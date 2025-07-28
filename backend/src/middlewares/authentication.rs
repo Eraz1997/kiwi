@@ -25,6 +25,9 @@ pub async fn authentication_middleware(
     mut request: Request,
     next: Next,
 ) -> Response {
+    // Remove any abused auth header
+    request.headers_mut().remove(KIWI_USER_ID_HEADER_NAME);
+
     let service = request
         .uri()
         .path()
@@ -60,7 +63,7 @@ pub async fn authentication_middleware(
             } else if let Ok(user_id_header_value) = HeaderValue::from_str(&user_id_string) {
                 request
                     .headers_mut()
-                    .append(KIWI_USER_ID_HEADER_NAME, user_id_header_value);
+                    .append(KIWI_USER_ID_HEADER_NAME, user_id_header_value); //do
                 next.run(request).await
             } else {
                 Error::serialisation().into_response()

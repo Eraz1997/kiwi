@@ -1,10 +1,11 @@
-import { useRouter } from "./contexts/router.jsx";
-import { AdminIndex } from "./pages/admin/index.jsx";
-import { AdminServices } from "./pages/admin/services.jsx";
-import { AdminUsers } from "./pages/admin/users.jsx";
-import { CreateUser } from "./pages/auth/createUser.jsx";
-import { Login } from "./pages/auth/login.jsx";
-import { NotFound } from "./pages/internal/notFound.jsx";
+import { useRouter } from "./contexts/router";
+import { AdminIndex } from "./pages/admin/index";
+import { AdminServices } from "./pages/admin/services";
+import { AdminUsers } from "./pages/admin/users";
+import { CreateUser } from "./pages/auth/createUser";
+import { Login } from "./pages/auth/login";
+import { Logout } from "./pages/auth/logout";
+import { NotFound } from "./pages/internal/notFound";
 import { Component, Match, Switch } from "solid-js";
 import { Box } from "styled-system/jsx/box";
 
@@ -19,6 +20,9 @@ export const App: Component = () => {
         </Match>
         <Match when={currentPage() === "auth/login"}>
           <Login />
+        </Match>
+        <Match when={currentPage() === "auth/logout"}>
+          <Logout />
         </Match>
         <Match when={currentPage() === "admin"}>
           <AdminIndex />

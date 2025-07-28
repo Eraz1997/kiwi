@@ -1,13 +1,19 @@
 import { createResource, createSignal } from "solid-js";
 
-export const createAsyncAction = (action: () => Promise<void>) => {
+export const createAsyncAction = <T extends unknown[]>(
+  action: (...input: T) => Promise<void>,
+) => {
   const [isLoading, setIsLoading] = createSignal(false);
+  const [inputState, setInputState] = createSignal<T>([] as unknown as T);
   createResource(isLoading, async () => {
-    await action();
+    await action(...inputState());
     setIsLoading(false);
   });
   return {
     isLoading,
-    call: () => setIsLoading(true),
+    call: (...input: T) => {
+      setInputState(() => input);
+      setIsLoading(true);
+    },
   };
 };

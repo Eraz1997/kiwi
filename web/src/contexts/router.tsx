@@ -13,6 +13,7 @@ import {
 
 export type Page =
   | "auth/login"
+  | "auth/logout"
   | "auth/create-user"
   | "internal/not-found"
   | "admin"
@@ -76,6 +77,13 @@ export const RouterProvider: Component<Props> = (props) => {
       ? `?${encodeQueryParams(queryParams)}`
       : "";
     const url = `${scheme}${service}.${domain()}/${path}${encodedQueryParams}`;
+    const currentService = currentPage().split("/")[0];
+
+    if (currentService !== service) {
+      window.location.replace(url);
+      return;
+    }
+
     window.history.pushState(null, "", url);
 
     setCurrentPage(page);
@@ -88,7 +96,7 @@ export const RouterProvider: Component<Props> = (props) => {
       return false;
     }
 
-    const uriParts = returnUri.substring(0, scheme.length).split("/");
+    const uriParts = returnUri.substring(scheme.length).split("/");
     if (!uriParts.length) {
       return false;
     }
@@ -153,6 +161,9 @@ const getPageFromLocation = (location: Location): Page => {
 
   if (subdomain === "auth" && path === "/login") {
     return "auth/login";
+  }
+  if (subdomain === "auth" && path === "/logout") {
+    return "auth/logout";
   }
   if (subdomain === "auth" && path === "/create-user") {
     return "auth/create-user";

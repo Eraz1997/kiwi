@@ -8,3 +8,9 @@ pub struct User {
     pub role: UserRole,
 }
 pub type GetUsersResponse = Vec<User>;
+pub type GetMeResponse = User;
+
+#[derive(Serialize, Deserialize)]
+pub struct DeleteUserRequest {
+    pub username: String,
+}
