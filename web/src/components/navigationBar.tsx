@@ -6,6 +6,7 @@ import { Component, createResource } from "solid-js";
 import { Heading } from "src/components/ui/heading";
 import { Page, useRouter } from "src/contexts/router";
 import { createBackendClient } from "src/hooks/createBackendClient";
+import { User } from "src/types";
 import { HStack, Spacer } from "styled-system/jsx";
 
 export const NavigationBar: Component = () => {
@@ -75,15 +76,9 @@ export const NavigationBar: Component = () => {
         <Spacer />
         <Heading size="xl">{title()}</Heading>
         <Menu.Root>
-          <Menu.Trigger
-            asChild={(triggerProps) => (
-              <Avatar
-                {...triggerProps}
-                cursor="pointer"
-                name={user()?.username ?? ""}
-              />
-            )}
-          />
+          <Menu.Trigger>
+            <Avatar cursor="pointer" name={user()?.username ?? ""} />
+          </Menu.Trigger>
           <Menu.Positioner>
             <Menu.Content>
               <Menu.ItemGroup>

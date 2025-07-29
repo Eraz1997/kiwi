@@ -1,9 +1,9 @@
-declare enum Role {
+export enum Role {
   Admin = "Admin",
   Customer = "Customer",
 }
 
-declare type User = {
+export type User = {
   username: string;
   role: Role;
 };

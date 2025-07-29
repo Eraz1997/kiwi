@@ -1,11 +1,14 @@
 use axum::http::HeaderMap;
-use axum::routing::{delete, get};
+use axum::routing::{delete, get, post};
 use axum::{Extension, Json, Router};
 
 use crate::constants::KIWI_USER_ID_HEADER_NAME;
 use crate::error::Error;
 use crate::managers::db::DbManager;
-use crate::routes::admin::api::models::{DeleteUserRequest, GetMeResponse, GetUsersResponse, User};
+use crate::routes::admin::api::models::{
+    CreateUserInvitationRequest, CreateUserInvitationResponse, DeleteUserRequest, GetMeResponse,
+    GetUsersResponse, User,
+};
 
 mod error;
 mod models;
@@ -13,6 +16,7 @@ mod models;
 pub fn create_router() -> Router {
     Router::new()
         .route("/users", get(get_users))
+        .route("/user", post(create_user_invitation))
         .route("/user", delete(delete_user))
         .route("/me", get(get_me))
 }
@@ -53,6 +57,17 @@ async fn get_me(
     let user = get_current_user(&db_manager, headers).await?;
 
     Ok(Json(user))
+}
+
+async fn create_user_invitation(
+    Extension(db_manager): Extension<DbManager>,
+    Json(payload): Json<CreateUserInvitationRequest>,
+) -> Result<Json<CreateUserInvitationResponse>, Error> {
+    let user_invitation = db_manager.create_user_invitation(payload.role).await?;
+
+    Ok(Json(CreateUserInvitationResponse {
+        invitation_id: user_invitation.id,
+    }))
 }
 
 async fn get_current_user(db_manager: &DbManager, headers: HeaderMap) -> Result<User, Error> {
