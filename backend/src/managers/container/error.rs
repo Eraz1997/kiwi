@@ -15,4 +15,11 @@ impl Error {
             message: "container image sha is not valid".to_string(),
         }
     }
+
+    pub fn network_name_not_found() -> Self {
+        Self {
+            code: StatusCode::INTERNAL_SERVER_ERROR,
+            message: "network name not found".to_string(),
+        }
+    }
 }

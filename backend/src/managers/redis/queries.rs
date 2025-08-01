@@ -1,4 +1,4 @@
-use fred::prelude::{KeysInterface, TransactionInterface};
+use fred::prelude::{AclInterface, KeysInterface, TransactionInterface};
 
 use crate::error::Error;
 use crate::managers::redis::{
@@ -178,6 +178,17 @@ impl RedisManager {
         .to_redis_key();
 
         let _: () = self.client.del(key).await?;
+        Ok(())
+    }
+
+    pub async fn create_user(&self, username: &str, password: &str) -> Result<(), Error> {
+        let rules = format!("ON >{} ~{}:* +@all", password, username);
+        self.client.acl_setuser(username, rules.as_str()).await?;
+        Ok(())
+    }
+
+    pub async fn delete_user(&self, username: &str) -> Result<(), Error> {
+        let _: () = self.client.acl_deluser(username).await?;
         Ok(())
     }
 }

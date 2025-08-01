@@ -1,10 +1,12 @@
+use bollard::container::LogOutput;
 use regex::Regex;
+use serde::{Deserialize, Serialize};
 use sha256::digest;
 
 use crate::error::Error;
 use crate::managers::db::constants::DATABASE_NAME;
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ImageSha {
     value: String,
 }
@@ -24,7 +26,7 @@ impl ImageSha {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ExposedPort {
     pub internal: u16,
     pub external: u16,
@@ -39,19 +41,21 @@ impl ExposedPort {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct EnvironmentVariable {
     pub name: String,
     pub value: String,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ContainerConfiguration {
     pub name: String,
     pub image_name: String,
     pub image_sha: ImageSha,
     pub exposed_ports: Vec<ExposedPort>,
     pub environment_variables: Vec<EnvironmentVariable>,
+    pub secrets: Vec<EnvironmentVariable>,
+    pub internal_secrets: Vec<EnvironmentVariable>,
     pub stateful_volume_paths: Vec<String>,
 }
 
@@ -67,7 +71,12 @@ impl ContainerConfiguration {
                 "bcb90dc18910057ff49ce2ea157d8a0d534964090d39af959df41083f18c3318".to_string(),
             )?, // 17.5-alpine3.22
             exposed_ports: vec![ExposedPort::symmetric(5432)],
-            environment_variables: vec![
+            environment_variables: vec![EnvironmentVariable {
+                name: "POSTGRES_DB".to_string(),
+                value: DATABASE_NAME.to_string(),
+            }],
+            secrets: vec![],
+            internal_secrets: vec![
                 EnvironmentVariable {
                     name: "POSTGRES_USER".to_string(),
                     value: admin_username.to_string(),
@@ -75,10 +84,6 @@ impl ContainerConfiguration {
                 EnvironmentVariable {
                     name: "POSTGRES_PASSWORD".to_string(),
                     value: admin_password.to_string(),
-                },
-                EnvironmentVariable {
-                    name: "POSTGRES_DB".to_string(),
-                    value: DATABASE_NAME.to_string(),
                 },
             ],
             stateful_volume_paths: vec!["/var/lib/postgresql/data".to_string()],
@@ -93,7 +98,9 @@ impl ContainerConfiguration {
                 "d0f84da5011d75e3cda5516646ceb4ce6fa1eac50014c7090472af1f5ae80c91".to_string(),
             )?, // 8.0.2
             exposed_ports: vec![ExposedPort::symmetric(6379)],
-            environment_variables: vec![EnvironmentVariable {
+            environment_variables: vec![],
+            secrets: vec![],
+            internal_secrets: vec![EnvironmentVariable {
                 name: "REDIS_PASSWORD".to_string(),
                 value: admin_password.to_string(),
             }],
@@ -105,5 +112,35 @@ impl ContainerConfiguration {
         let raw_id = format!("{}-{}", self.name, path);
         let hashed_id = digest(raw_id);
         format!("{}-{}", self.name, hashed_id)
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum LogType {
+    Output,
+    Error,
+    Input,
+    Console,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Log {
+    pub log_type: LogType,
+    pub message: String,
+}
+
+impl From<LogOutput> for Log {
+    fn from(value: LogOutput) -> Self {
+        let log_type = match value {
+            LogOutput::StdErr { message: _ } => LogType::Error,
+            LogOutput::StdOut { message: _ } => LogType::Output,
+            LogOutput::StdIn { message: _ } => LogType::Input,
+            LogOutput::Console { message: _ } => LogType::Console,
+        };
+
+        Self {
+            log_type,
+            message: value.to_string(),
+        }
     }
 }

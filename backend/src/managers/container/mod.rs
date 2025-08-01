@@ -1,16 +1,25 @@
 use std::collections::HashMap;
+use std::net::{Ipv4Addr, SocketAddrV4, TcpListener};
 
 use crate::error::Error;
+use crate::managers::container::models::Log;
+use bollard::container::LogOutput;
+use bollard::query_parameters::LogsOptionsBuilder;
 #[allow(deprecated)]
 use bollard::volume::CreateVolumeOptions;
+#[allow(deprecated)]
 use bollard::{
     Docker,
+    network::{ConnectNetworkOptions, CreateNetworkOptions, DisconnectNetworkOptions},
     query_parameters::{
         CreateContainerOptionsBuilder, CreateImageOptionsBuilder, ListContainersOptionsBuilder,
-        RemoveContainerOptionsBuilder, StartContainerOptions, StopContainerOptions,
+        ListNetworksOptions, RemoveContainerOptionsBuilder, StartContainerOptions,
+        StopContainerOptions,
     },
-    secret::{ContainerCreateBody, ContainerSummaryStateEnum, HostConfig, PortBinding},
+    secret::{ContainerCreateBody, ContainerSummaryStateEnum, HostConfig, Network, PortBinding},
 };
+use chrono::NaiveDateTime;
+use futures::TryStreamExt;
 use futures::stream::StreamExt;
 use models::ContainerConfiguration;
 
@@ -60,6 +69,35 @@ impl ContainerManager {
                 "reset docker status: stopped and removed {} containers",
                 running_containers.len()
             );
+        }
+        let networks: Vec<Network> = client
+            .list_networks(None::<ListNetworksOptions>)
+            .await?
+            .into_iter()
+            .filter(|network| {
+                network
+                    .name
+                    .clone()
+                    .filter(|name| name == "bridge" || name == "none" || name == "host")
+                    .is_none()
+            })
+            .collect();
+
+        if networks.is_empty() {
+            tracing::info!("no networks found, skipping reset");
+        } else {
+            for network in networks.iter() {
+                client
+                    .remove_network(
+                        network
+                            .name
+                            .clone()
+                            .ok_or(Error::network_name_not_found())?
+                            .as_str(),
+                    )
+                    .await?;
+            }
+            tracing::info!("reset docker status: removed {} networks", networks.len());
         }
 
         Ok(Self { client })
@@ -132,6 +170,8 @@ impl ContainerManager {
         let env_vars: Vec<String> = configuration
             .environment_variables
             .iter()
+            .chain(&configuration.secrets)
+            .chain(&configuration.internal_secrets)
             .map(|env_var| format!("{}={}", env_var.name, env_var.value))
             .collect();
         let port_bindings: HashMap<String, Option<Vec<PortBinding>>> = configuration
@@ -187,5 +227,110 @@ impl ContainerManager {
         tracing::info!("container {} started", configuration.name);
 
         Ok(())
+    }
+
+    pub async fn create_and_attach_network_for_container(
+        &self,
+        configuration: &ContainerConfiguration,
+    ) -> Result<(), Error> {
+        let duplicate_network = self
+            .client
+            .list_networks(None::<ListNetworksOptions>)
+            .await?
+            .into_iter()
+            .find(|network| {
+                network
+                    .name
+                    .clone()
+                    .filter(|name| *name == configuration.name)
+                    .is_some()
+            });
+
+        if let Some(duplicate_network) = duplicate_network {
+            let network_name = duplicate_network
+                .name
+                .clone()
+                .ok_or(Error::network_name_not_found())?;
+            if let Some(attached_containers) = duplicate_network.containers {
+                for container in attached_containers.values() {
+                    #[allow(deprecated)]
+                    let options = DisconnectNetworkOptions {
+                        container: container
+                            .name
+                            .clone()
+                            .ok_or(Error::container_id_not_found())?,
+                        force: true,
+                    };
+                    self.client
+                        .disconnect_network(network_name.as_str(), options)
+                        .await?;
+                }
+            }
+            self.client.remove_network(network_name.as_str()).await?;
+        }
+
+        #[allow(deprecated)]
+        let options = CreateNetworkOptions {
+            name: configuration.name.clone(),
+            ..Default::default()
+        };
+        self.client.create_network(options).await?;
+
+        for container_name in ["kiwi-postgres", "kiwi-redis", &configuration.name] {
+            #[allow(deprecated)]
+            let options = ConnectNetworkOptions {
+                container: container_name,
+                ..Default::default()
+            };
+            self.client
+                .connect_network(configuration.name.as_str(), options)
+                .await?;
+        }
+
+        Ok(())
+    }
+
+    pub async fn get_container_status(&self, name: &str) -> Result<String, Error> {
+        let list_options = ListContainersOptionsBuilder::new().all(true).build();
+        let containers = self.client.list_containers(Some(list_options)).await?;
+
+        let container = containers
+            .into_iter()
+            .find(|container| {
+                container
+                    .names
+                    .clone()
+                    .unwrap_or_default()
+                    .iter()
+                    .any(|container_name| *container_name == name)
+            })
+            .ok_or(Error::container_id_not_found())?;
+
+        let status = container.status.unwrap_or("Unknown".to_string());
+        Ok(status)
+    }
+
+    pub async fn get_container_logs(
+        &self,
+        name: &str,
+        from_date: NaiveDateTime,
+        to_date: NaiveDateTime,
+    ) -> Result<Vec<Log>, Error> {
+        let options = LogsOptionsBuilder::new()
+            .stdout(true)
+            .stderr(true)
+            .timestamps(true)
+            .since(from_date.and_utc().timestamp() as i32)
+            .until(to_date.and_utc().timestamp() as i32)
+            .build();
+        let logs_raw: Vec<LogOutput> = self.client.logs(name, Some(options)).try_collect().await?;
+        let logs: Vec<Log> = logs_raw.into_iter().map(|log| log.into()).collect();
+
+        Ok(logs)
+    }
+
+    pub fn is_local_port_free(port: &u16) -> bool {
+        let ipv4 = SocketAddrV4::new(Ipv4Addr::LOCALHOST, *port);
+        TcpListener::bind(ipv4).is_ok()
     }
 }

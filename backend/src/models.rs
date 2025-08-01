@@ -1,37 +1,9 @@
 use std::str::FromStr;
 
 use postgres_types::{FromSql, ToSql};
-use rand::Rng;
-use rand::distr::Alphanumeric;
 use serde::{Deserialize, Serialize};
 
 use crate::error::Error;
-
-#[derive(Serialize, Deserialize)]
-pub struct Secret {
-    value: String,
-}
-
-impl Secret {
-    pub fn generate(length: usize) -> Self {
-        let value = rand::rng()
-            .sample_iter(&Alphanumeric)
-            .take(length)
-            .map(char::from)
-            .collect();
-        Self { value }
-    }
-
-    pub fn get(&self) -> String {
-        self.value.clone()
-    }
-}
-
-impl Default for Secret {
-    fn default() -> Self {
-        Self::generate(64)
-    }
-}
 
 #[derive(Clone, Debug, FromSql, ToSql, Serialize, Deserialize)]
 #[postgres(name = "user_role")]

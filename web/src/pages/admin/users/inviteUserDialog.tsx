@@ -51,7 +51,7 @@ export const InviteUserDialog: Component<Props> = (props) => {
 
   const { call: inviteUser, isLoading } = createAsyncAction(
     async (role: Role) => {
-      const { statusCode, jsonPayload } = await adminClient.post("/user", {
+      const { statusCode, jsonPayload } = await adminClient.post("/users", {
         role,
       });
 

@@ -20,7 +20,7 @@ export const AdminUsers: Component = () => {
   const adminClient = createBackendClient("admin");
 
   const [currentUser] = createResource<User>(async () => {
-    const { jsonPayload: user } = await adminClient.get("/me");
+    const { jsonPayload: user } = await adminClient.get("/users/me");
     return user;
   });
   const [users, { refetch: reloadUsers }] = createResource<User[]>(async () => {

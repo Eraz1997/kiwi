@@ -14,7 +14,7 @@ export const NavigationBar: Component = () => {
   const adminClient = createBackendClient("admin");
 
   const [user] = createResource<User>(async () => {
-    const { jsonPayload: user } = await adminClient.get("/me");
+    const { jsonPayload: user } = await adminClient.get("/users/me");
     return user;
   });
 

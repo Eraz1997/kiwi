@@ -25,7 +25,7 @@ export const DeleteUserDialog: Component<Props> = (props) => {
   const { call: deleteUser, isLoading } = createAsyncAction(
     async (username: string) => {
       const { statusCode, jsonPayload: errorMessage } =
-        await adminClient.delete("/user", { username });
+        await adminClient.delete("/users", { username });
 
       if (statusCode === 200) {
         props.createToast({

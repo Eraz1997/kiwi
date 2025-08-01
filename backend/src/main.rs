@@ -60,6 +60,16 @@ async fn main() -> Result<(), Error> {
     let redis_manager = RedisManager::new(&redis_admin_password).await?;
     let dev_frontend_manager = DevFrontendManager::new(&settings)?;
 
+    let services = db_manager.get_services_data().await?;
+    for service in services {
+        container_manager
+            .start_container(&service.container_configuration)
+            .await?;
+        container_manager
+            .create_and_attach_network_for_container(&service.container_configuration)
+            .await?;
+    }
+
     let invitation = db_manager
         .get_or_create_admin_invitation_if_no_admin_yet()
         .await?;
