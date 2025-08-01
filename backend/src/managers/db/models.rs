@@ -1,7 +1,12 @@
+use chrono::NaiveDateTime;
+use serde::{Deserialize, Serialize};
 use tokio_postgres::Row;
 use uuid::Uuid;
 
 use crate::error::Error;
+use crate::managers::container::models::{
+    ContainerConfiguration, EnvironmentVariable, ExposedPort, ImageSha,
+};
 use crate::models::UserRole;
 
 pub struct UserData {
@@ -38,4 +43,101 @@ impl TryFrom<Row> for UserInvitation {
             role: value.try_get("role")?,
         })
     }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ServiceData {
+    pub container_configuration: ContainerConfiguration,
+    pub created_at: NaiveDateTime,
+    pub last_modified_at: NaiveDateTime,
+    pub last_deployed_at: NaiveDateTime,
+}
+
+impl TryFrom<Row> for ServiceData {
+    type Error = Error;
+
+    fn try_from(value: Row) -> Result<Self, Self::Error> {
+        let exposed_ports_vec = value.try_get::<&str, Vec<Vec<i32>>>("exposed_ports")?;
+        let mut exposed_ports: Vec<ExposedPort> = vec![];
+
+        for ports in exposed_ports_vec {
+            exposed_ports.push(ExposedPort {
+                internal: *(ports.first().ok_or(Error::serialisation())?) as u16,
+                external: *(ports.get(1).ok_or(Error::serialisation())?) as u16,
+            });
+        }
+
+        let postgres_username: String = value.try_get("postgres_username")?;
+        let postgres_password: String = value.try_get("postgres_password")?;
+        let redis_username: String = value.try_get("redis_username")?;
+        let redis_password: String = value.try_get("redis_password")?;
+
+        Ok(Self {
+            container_configuration: ContainerConfiguration {
+                name: value.try_get("name")?,
+                image_name: value.try_get("image_name")?,
+                image_sha: ImageSha::new(value.try_get("image_sha")?)?,
+                exposed_ports,
+                environment_variables: extract_environment_variables(
+                    &value,
+                    "environment_variables",
+                )?,
+                secrets: extract_environment_variables(&value, "secrets")?,
+                internal_secrets: vec![
+                    EnvironmentVariable {
+                        name: "KIWI_POSTGRES_URI".to_string(),
+                        value: format!(
+                            "psql://{}:{}@kiwi-postgres:5432/{}",
+                            postgres_username, postgres_password, postgres_username
+                        ),
+                    },
+                    EnvironmentVariable {
+                        name: "KIWI_REDIS_URI".to_string(),
+                        value: format!(
+                            "redis://{}:{}:kiwi-redis:6379",
+                            redis_username, redis_password
+                        ),
+                    },
+                    EnvironmentVariable {
+                        name: "KIWI_REDIS_PREFIX".to_string(),
+                        value: redis_username,
+                    },
+                ],
+                stateful_volume_paths: value.try_get("stateful_volume_paths")?,
+            },
+            created_at: value.try_get("created_at")?,
+            last_modified_at: value.try_get("last_modified_at")?,
+            last_deployed_at: value.try_get("last_deployed_at")?,
+        })
+    }
+}
+
+impl ServiceData {
+    pub fn with_redacted_internal_secrets(mut self) -> Self {
+        self.container_configuration.internal_secrets = vec![];
+        self
+    }
+}
+
+fn extract_environment_variables(
+    value: &Row,
+    column: &str,
+) -> Result<Vec<EnvironmentVariable>, Error> {
+    let raw_environment_variables = value.try_get::<&str, Vec<Vec<String>>>(column)?;
+    let mut environment_variables: Vec<EnvironmentVariable> = vec![];
+
+    for environment_variable in raw_environment_variables {
+        environment_variables.push(EnvironmentVariable {
+            name: environment_variable
+                .first()
+                .ok_or(Error::serialisation())?
+                .clone(),
+            value: environment_variable
+                .get(1)
+                .ok_or(Error::serialisation())?
+                .clone(),
+        });
+    }
+
+    Ok(environment_variables)
 }

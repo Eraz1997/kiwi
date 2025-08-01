@@ -9,7 +9,7 @@ use crate::error::Error;
 use crate::managers::secrets::models::Secrets;
 use crate::settings::Settings;
 
-mod models;
+pub mod models;
 
 pub struct SecretsManager {
     secrets: Secrets,

@@ -8,10 +8,11 @@ argon2 = "0.5.3"
 axum = { version = "0.8.4", features = ["http2", "macros"] }
 axum-extra = { version = "0.10.1", features = ["cookie"] }
 bollard = "0.19.0"
+chrono = { version = "0.4.41", features = ["serde"] }
 clap = { version = "4.5.38", features = ["derive"] }
 deadpool-postgres = "0.14.1"
 dirs = "6.0.0"
-fred = { version = "10.1.0", features = ["transactions"] }
+fred = { version = "10.1.0", features = ["transactions", "i-acl"] }
 futures = "0.3.31"
 postgres-types = { version = "0.2.9", features = ["derive"] }
 rand = "0.9.1"
@@ -23,7 +24,7 @@ serde_json = "1.0.140"
 sha256 = "1.6.0"
 time = "0.3.41"
 tokio = { version = "1.45.1", features = ["rt", "rt-multi-thread", "macros"] }
-tokio-postgres = { version = "0.7.13", features = ["with-uuid-1"] }
+tokio-postgres = { version = "0.7.13", features = ["with-uuid-1", "with-chrono-0_4"] }
 tower = "0.5.2"
 tower-http = { version = "0.6.4", features = ["fs", "trace", "cors"] }
 tracing = "0.1.41"

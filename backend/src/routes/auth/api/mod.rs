@@ -20,7 +20,8 @@ use crate::managers::crypto::CryptoManager;
 use crate::managers::db::DbManager;
 use crate::managers::redis::RedisManager;
 use crate::managers::redis::models::{RedisRefreshToken, RedisRefreshTokenKind};
-use crate::models::{Secret, UserRole};
+use crate::managers::secrets::models::Secret;
+use crate::models::UserRole;
 use crate::routes::auth::api::constants::CREDENTIALS_DURATION;
 use crate::routes::auth::api::models::{
     CreateUserRequest, GetSealingKeyResponse, RefreshCredentialsQuery,

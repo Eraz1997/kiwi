@@ -5,6 +5,7 @@ use crate::managers::db::{
     DbManager,
     models::{UserData, UserInvitation},
 };
+use crate::models::UserRole;
 
 impl DbManager {
     pub async fn get_user_data(&self, username: &String) -> Result<Option<UserData>, Error> {
@@ -114,7 +115,7 @@ impl DbManager {
         let user_data = match invitation {
             None => None,
             Some(invitation) => {
-                let statement = transaction.prepare_cached("INSERT INTO users (username, password_hash, role) VALUES ($1, $2, $3) RETURNING id, password_hash, role").await?;
+                let statement = transaction.prepare_cached("INSERT INTO users (username, password_hash, role) VALUES ($1, $2, $3) RETURNING id, password_hash, role, username").await?;
                 let user_data_raw = transaction
                     .query_one(&statement, &[&username, &password_hash, &invitation.role])
                     .await?;
@@ -129,5 +130,15 @@ impl DbManager {
         };
         transaction.commit().await?;
         Ok(user_data)
+    }
+
+    pub async fn create_user_invitation(&self, role: UserRole) -> Result<UserInvitation, Error> {
+        let client = self.connection_pool.get().await?;
+        let statement = client
+            .prepare_cached("INSERT INTO user_invitations (role) VALUES ($1) RETURNING id, role")
+            .await?;
+        let invitation_raw = client.query_one(&statement, &[&role]).await?;
+        let invitation = UserInvitation::try_from(invitation_raw)?;
+        Ok(invitation)
     }
 }
