@@ -5,7 +5,7 @@ use axum::{Extension, Router};
 use reqwest::Body;
 
 use crate::error::Error;
-use crate::managers::dev_frontend::DevFrontendManager;
+use crate::managers::local_http::LocalHttpManager;
 use crate::services::ServeStaticWebApp;
 use crate::settings::Settings;
 
@@ -17,17 +17,14 @@ pub fn create_router(settings: &Settings) -> Router {
     if settings.is_development() {
         router.route("/{*path}", get(forward_to_development_frontend_server))
     } else {
-        let home_path = settings.get_home_dir();
-        let config_folder_path = format!("{}/.kiwi", home_path);
-        let public_assets_file_path = format!("{}/public", config_folder_path);
-        router.nest_service("/", ServeStaticWebApp::new(&public_assets_file_path))
+        router.nest_service("/", ServeStaticWebApp::new(&settings.static_files_path))
     }
 }
 
 async fn forward_to_development_frontend_server(
-    dev_frontend_manager: Extension<DevFrontendManager>,
+    local_http_manager: Extension<LocalHttpManager>,
     Path(path): Path<String>,
 ) -> Result<Response<Body>, Error> {
-    let response = dev_frontend_manager.get(path).await?;
+    let response = local_http_manager.get_dev_frontend_page(path).await?;
     Ok(response)
 }

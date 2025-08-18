@@ -37,11 +37,10 @@ impl DbManager {
         redis_username: &String,
         redis_password: &String,
     ) -> Result<ServiceData, Error> {
-        let exposed_ports: Vec<Vec<i32>> = configuration
-            .exposed_ports
-            .iter()
-            .map(|port| vec![port.internal as i32, port.external as i32])
-            .collect();
+        let exposed_port: Vec<i32> = vec![
+            configuration.exposed_port.internal as i32,
+            configuration.exposed_port.external as i32,
+        ];
         let environment_variables: Vec<Vec<String>> = configuration
             .environment_variables
             .iter()
@@ -62,7 +61,7 @@ impl DbManager {
                 name,
                 image_name,
                 image_sha,
-                exposed_ports,
+                exposed_port,
                 environment_variables,
                 secrets,
                 stateful_volume_paths,
@@ -76,7 +75,7 @@ impl DbManager {
                 name,
                 image_name,
                 image_sha,
-                exposed_ports,
+                exposed_port,
                 environment_variables,
                 secrets,
                 stateful_volume_paths,
@@ -97,7 +96,7 @@ impl DbManager {
                     &configuration.name,
                     &configuration.image_name,
                     &configuration.image_sha.get_value(),
-                    &exposed_ports,
+                    &exposed_port,
                     &environment_variables,
                     &secrets,
                     &configuration.stateful_volume_paths,
@@ -162,11 +161,10 @@ impl DbManager {
         old_service: &ServiceData,
         new_configuration: &ContainerConfiguration,
     ) -> Result<ServiceData, Error> {
-        let exposed_ports: Vec<Vec<i32>> = new_configuration
-            .exposed_ports
-            .iter()
-            .map(|port| vec![port.internal as i32, port.external as i32])
-            .collect();
+        let exposed_port: Vec<i32> = vec![
+            new_configuration.exposed_port.internal as i32,
+            new_configuration.exposed_port.external as i32,
+        ];
         let environment_variables: Vec<Vec<String>> = new_configuration
             .environment_variables
             .iter()
@@ -186,7 +184,7 @@ impl DbManager {
                     name = $1,
                     image_name = $2,
                     image_sha = $3,
-                    exposed_ports = $4,
+                    exposed_port = $4,
                     environment_variables = $5,
                     secrets = $6,
                     stateful_volume_paths = $7
@@ -196,7 +194,7 @@ impl DbManager {
                     name,
                     image_name,
                     image_sha,
-                    exposed_ports,
+                    exposed_port,
                     environment_variables,
                     secrets,
                     stateful_volume_paths,
@@ -217,7 +215,7 @@ impl DbManager {
                     &new_configuration.name,
                     &new_configuration.image_name,
                     &new_configuration.image_sha.get_value(),
-                    &exposed_ports,
+                    &exposed_port,
                     &environment_variables,
                     &secrets,
                     &new_configuration.stateful_volume_paths,
@@ -228,5 +226,21 @@ impl DbManager {
         let service = ServiceData::try_from(service_row)?;
 
         Ok(service)
+    }
+
+    pub async fn get_service_port(&self, name: &String) -> Result<Option<i32>, Error> {
+        let client = self.connection_pool.get().await?;
+
+        let statement = client
+            .prepare_cached("SELECT exposed_port FROM services WHERE name = $1")
+            .await?;
+        let row = client.query_opt(&statement, &[name]).await?;
+
+        if let Some(row) = row {
+            let exposed_port = row.try_get::<&str, Vec<i32>>("exposed_port")?;
+            Ok(exposed_port.get(1).cloned())
+        } else {
+            Ok(None)
+        }
     }
 }

@@ -52,7 +52,7 @@ pub struct ContainerConfiguration {
     pub name: String,
     pub image_name: String,
     pub image_sha: ImageSha,
-    pub exposed_ports: Vec<ExposedPort>,
+    pub exposed_port: ExposedPort,
     pub environment_variables: Vec<EnvironmentVariable>,
     pub secrets: Vec<EnvironmentVariable>,
     pub internal_secrets: Vec<EnvironmentVariable>,
@@ -70,7 +70,7 @@ impl ContainerConfiguration {
             image_sha: ImageSha::new(
                 "bcb90dc18910057ff49ce2ea157d8a0d534964090d39af959df41083f18c3318".to_string(),
             )?, // 17.5-alpine3.22
-            exposed_ports: vec![ExposedPort::symmetric(5432)],
+            exposed_port: ExposedPort::symmetric(5432),
             environment_variables: vec![EnvironmentVariable {
                 name: "POSTGRES_DB".to_string(),
                 value: DATABASE_NAME.to_string(),
@@ -97,7 +97,7 @@ impl ContainerConfiguration {
             image_sha: ImageSha::new(
                 "d0f84da5011d75e3cda5516646ceb4ce6fa1eac50014c7090472af1f5ae80c91".to_string(),
             )?, // 8.0.2
-            exposed_ports: vec![ExposedPort::symmetric(6379)],
+            exposed_port: ExposedPort::symmetric(6379),
             environment_variables: vec![],
             secrets: vec![],
             internal_secrets: vec![EnvironmentVariable {

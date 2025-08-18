@@ -1,7 +1,7 @@
 use crate::error::Error;
 use crate::logger::Logger;
 use crate::managers::crypto::CryptoManager;
-use crate::managers::dev_frontend::DevFrontendManager;
+use crate::managers::local_http::LocalHttpManager;
 use crate::managers::redis::RedisManager;
 use crate::managers::secrets::SecretsManager;
 use crate::server::Server;
@@ -58,7 +58,7 @@ async fn main() -> Result<(), Error> {
 
     let db_manager = DbManager::new(&db_admin_username, &db_admin_password).await?;
     let redis_manager = RedisManager::new(&redis_admin_password).await?;
-    let dev_frontend_manager = DevFrontendManager::new(&settings)?;
+    let local_http_manager = LocalHttpManager::new(&settings)?;
 
     let services = db_manager.get_services_data().await?;
     for service in services {
@@ -90,7 +90,7 @@ async fn main() -> Result<(), Error> {
         .layer(Extension(container_manager))
         .layer(Extension(crypto_manager))
         .layer(Extension(redis_manager))
-        .layer(Extension(dev_frontend_manager));
+        .layer(Extension(local_http_manager));
 
     Server::new(&settings).start(&app).await?;
 

@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::net::{Ipv4Addr, SocketAddrV4, TcpListener};
 
 use crate::error::Error;
-use crate::managers::container::constants::VOLUME_CLONER_IMAGE_TAG;
 use crate::managers::container::models::Log;
 use bollard::container::LogOutput;
 use bollard::query_parameters::LogsOptionsBuilder;
@@ -25,9 +24,7 @@ use chrono::NaiveDateTime;
 use futures::TryStreamExt;
 use futures::stream::StreamExt;
 use models::ContainerConfiguration;
-use uuid::Uuid;
 
-mod constants;
 pub mod error;
 pub mod models;
 
@@ -148,7 +145,20 @@ impl ContainerManager {
             configuration.image_sha.get_value()
         );
 
-        self.pull_image(&image_tag).await?;
+        let create_image_options = CreateImageOptionsBuilder::new()
+            .from_image(&image_tag)
+            .build();
+        let mut image_pull_stream =
+            self.client
+                .create_image(Some(create_image_options), None, None);
+
+        tracing::info!("started pulling image {}", image_tag);
+
+        while let Some(pull_result) = image_pull_stream.next().await {
+            pull_result?;
+        }
+
+        tracing::info!("pulled image {}", image_tag);
 
         let options = CreateContainerOptionsBuilder::new()
             .name(&configuration.name)
@@ -161,21 +171,20 @@ impl ContainerManager {
             .chain(&configuration.internal_secrets)
             .map(|env_var| format!("{}={}", env_var.name, env_var.value))
             .collect();
-        let port_bindings: HashMap<String, Option<Vec<PortBinding>>> = configuration
-            .exposed_ports
-            .iter()
-            .map(|port| {
-                (
-                    port.internal.to_string(),
-                    Some(vec![PortBinding {
-                        host_ip: Some("127.0.0.1".to_string()),
-                        host_port: Some(port.external.to_string()),
-                    }]),
-                )
-            })
-            .collect();
-        let exposed_ports: HashMap<String, HashMap<(), ()>> = configuration
-            .exposed_ports
+        let port_bindings: HashMap<String, Option<Vec<PortBinding>>> =
+            [configuration.exposed_port.clone()]
+                .iter()
+                .map(|port| {
+                    (
+                        port.internal.to_string(),
+                        Some(vec![PortBinding {
+                            host_ip: Some("127.0.0.1".to_string()),
+                            host_port: Some(port.external.to_string()),
+                        }]),
+                    )
+                })
+                .collect();
+        let exposed_ports: HashMap<String, HashMap<(), ()>> = [configuration.exposed_port.clone()]
             .iter()
             .map(|port| (port.internal.to_string(), HashMap::new()))
             .collect();
@@ -306,77 +315,6 @@ impl ContainerManager {
         Ok(())
     }
 
-    pub async fn clone_volume(
-        &self,
-        old_configuration: &ContainerConfiguration,
-        new_configuration: &ContainerConfiguration,
-        path: &String,
-    ) -> Result<(), Error> {
-        let old_volume_id = old_configuration.get_stateful_volume_id(path);
-        let new_volume_id = new_configuration.get_stateful_volume_id(path);
-
-        #[allow(deprecated)]
-        let options = CreateVolumeOptions {
-            name: new_volume_id.clone(),
-            ..Default::default()
-        };
-        self.client.create_volume(options).await?;
-        let volume_bindings = vec![
-            format!("{}:{}", old_volume_id, "/from"),
-            format!("{}:{}", new_volume_id, "/to"),
-        ];
-
-        let configuration_body = ContainerCreateBody {
-            host_config: Some(HostConfig {
-                binds: Some(volume_bindings),
-                ..Default::default()
-            }),
-            image: Some(VOLUME_CLONER_IMAGE_TAG.to_string()),
-            cmd: Some(vec![
-                "sh".to_string(),
-                "-c".to_string(),
-                "cp -a /from/. /to/".to_string(),
-            ]),
-            ..Default::default()
-        };
-
-        self.pull_image(VOLUME_CLONER_IMAGE_TAG).await?;
-
-        let container_name = Uuid::new_v4().to_string();
-        let options = CreateContainerOptionsBuilder::new()
-            .name(&container_name)
-            .build();
-
-        tracing::info!("starting volume cloner for volume with path: {}", path);
-
-        self.client
-            .create_container(Some(options), configuration_body)
-            .await?;
-        self.client
-            .start_container(&container_name, None::<StartContainerOptions>)
-            .await?;
-
-        let options = LogsOptionsBuilder::new()
-            .stdout(true)
-            .stderr(true)
-            .follow(true)
-            .build();
-        let mut logs = self.client.logs(&container_name, Some(options));
-        while logs.try_next().await?.is_some() {}
-
-        let remove_options = RemoveContainerOptionsBuilder::new().force(true).build();
-        self.client
-            .remove_container(&container_name, Some(remove_options))
-            .await?;
-
-        tracing::info!(
-            "successfully removed volume cloner for volume with path: {}",
-            path
-        );
-
-        Ok(())
-    }
-
     pub fn is_local_port_free(port: &u16) -> bool {
         let ipv4 = SocketAddrV4::new(Ipv4Addr::LOCALHOST, *port);
         TcpListener::bind(ipv4).is_ok()
@@ -442,24 +380,5 @@ impl ContainerManager {
             .ok_or(Error::container_id_not_found())?;
 
         Ok(container.state)
-    }
-
-    async fn pull_image(&self, image_tag: &str) -> Result<(), Error> {
-        let create_image_options = CreateImageOptionsBuilder::new()
-            .from_image(image_tag)
-            .build();
-        let mut image_pull_stream =
-            self.client
-                .create_image(Some(create_image_options), None, None);
-
-        tracing::info!("started pulling image {}", image_tag);
-
-        while let Some(pull_result) = image_pull_stream.next().await {
-            pull_result?;
-        }
-
-        tracing::info!("pulled image {}", image_tag);
-
-        Ok(())
     }
 }

@@ -1,6 +1,7 @@
 use fred::prelude::{AclInterface, KeysInterface, TransactionInterface};
 
 use crate::error::Error;
+use crate::managers::redis::models::RedisServicePort;
 use crate::managers::redis::{
     RedisManager,
     models::{
@@ -189,6 +190,52 @@ impl RedisManager {
 
     pub async fn delete_user(&self, username: &str) -> Result<(), Error> {
         let _: () = self.client.acl_deluser(username).await?;
+        Ok(())
+    }
+
+    pub async fn get_service_port(&self, service_name: &str) -> Result<RedisServicePort, Error> {
+        let key = RedisServicePort {
+            service_name: service_name.to_string(),
+            port: None,
+        }
+        .to_redis_key();
+
+        let value: String = self.client.get(key).await?;
+
+        let item =
+            RedisServicePort::from_redis_key_suffix_and_value(service_name.to_string(), value)?;
+
+        Ok(item)
+    }
+
+    pub async fn store_service_port(&self, service_name: &str, port: i32) -> Result<(), Error> {
+        let item = RedisServicePort {
+            service_name: service_name.to_string(),
+            port: Some(port),
+        };
+
+        let _: () = self
+            .client
+            .set(
+                item.to_redis_key(),
+                item.to_redis_value(),
+                item.get_expiration(),
+                None,
+                false,
+            )
+            .await?;
+
+        Ok(())
+    }
+
+    pub async fn purge_service_port(&self, service_name: &str) -> Result<(), Error> {
+        let item = RedisServicePort {
+            service_name: service_name.to_string(),
+            port: None,
+        };
+
+        let _: () = self.client.del(item.to_redis_key()).await?;
+
         Ok(())
     }
 }

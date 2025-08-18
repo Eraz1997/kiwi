@@ -64,15 +64,11 @@ impl TryFrom<Row> for ServiceData {
     type Error = Error;
 
     fn try_from(value: Row) -> Result<Self, Self::Error> {
-        let exposed_ports_vec = value.try_get::<&str, Vec<Vec<i32>>>("exposed_ports")?;
-        let mut exposed_ports: Vec<ExposedPort> = vec![];
-
-        for ports in exposed_ports_vec {
-            exposed_ports.push(ExposedPort {
-                internal: *(ports.first().ok_or(Error::serialisation())?) as u16,
-                external: *(ports.get(1).ok_or(Error::serialisation())?) as u16,
-            });
-        }
+        let exposed_port_vec = value.try_get::<&str, Vec<i32>>("exposed_port")?;
+        let exposed_port: ExposedPort = ExposedPort {
+            internal: *(exposed_port_vec.first().ok_or(Error::serialisation())?) as u16,
+            external: *(exposed_port_vec.get(1).ok_or(Error::serialisation())?) as u16,
+        };
 
         let postgres_username: String = value.try_get("postgres_username")?;
         let postgres_password: String = value.try_get("postgres_password")?;
@@ -85,7 +81,7 @@ impl TryFrom<Row> for ServiceData {
                 name: value.try_get("name")?,
                 image_name: value.try_get("image_name")?,
                 image_sha: ImageSha::new(value.try_get("image_sha")?)?,
-                exposed_ports,
+                exposed_port,
                 environment_variables: extract_environment_variables(
                     &value,
                     "environment_variables",

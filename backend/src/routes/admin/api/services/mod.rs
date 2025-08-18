@@ -25,7 +25,7 @@ pub fn create_router() -> Router {
         .route("/{name}/logs", get(get_logs))
         .route("/", post(create_service))
         .route("/{name}", delete(delete_service))
-        .route("/{previous_name}", put(edit_service))
+        .route("/{name}", put(edit_service))
 }
 
 async fn get_services(
@@ -77,10 +77,8 @@ async fn create_service(
     Extension(redis_manager): Extension<RedisManager>,
     Json(payload): Json<ContainerConfiguration>,
 ) -> Result<(), Error> {
-    for port in payload.exposed_ports.iter() {
-        if !ContainerManager::is_local_port_free(&port.external) {
-            return Err(Error::port_in_use(&port.external));
-        }
+    if !ContainerManager::is_local_port_free(&payload.exposed_port.external) {
+        return Err(Error::port_in_use(&payload.exposed_port.external));
     }
 
     let postgres_username = Secret::default().get();
@@ -91,6 +89,7 @@ async fn create_service(
     redis_manager
         .create_user(&redis_username, &redis_password)
         .await?;
+    redis_manager.purge_service_port(&payload.name).await?;
     let service = db_manager
         .create_service(
             &payload,
@@ -133,6 +132,7 @@ async fn delete_service(
     redis_manager
         .delete_user(&service.internal_configuration.redis_username)
         .await?;
+    redis_manager.purge_service_port(&name).await?;
     db_manager
         .delete_service(&name, &service.internal_configuration.postgres_username)
         .await?;
@@ -151,41 +151,32 @@ async fn edit_service(
         .await?
         .ok_or(Error::container_not_found())?;
 
-    let already_exposed_ports: HashSet<u16> = service
-        .container_configuration
-        .exposed_ports
-        .iter()
-        .map(|port| port.external)
-        .collect();
-
-    for port in payload.exposed_ports.iter() {
-        if !already_exposed_ports.contains(&port.external)
-            && !ContainerManager::is_local_port_free(&port.external)
-        {
-            return Err(Error::port_in_use(&port.external));
-        }
+    if service.container_configuration.name != payload.name {
+        return Err(Error::inconsistent_name());
     }
+    if service.container_configuration.exposed_port.external != payload.exposed_port.external {
+        return Err(Error::inconsistent_port());
+    }
+
+    let updated_service = db_manager.update_service(&service, &payload).await?;
 
     container_manager
         .stop_and_remove_container(&previous_name)
         .await?;
 
-    if service.container_configuration.name != payload.name {
-        // volume id depends on service name
-        for volume_path in service.container_configuration.stateful_volume_paths.iter() {
-            if !payload.stateful_volume_paths.contains(volume_path) {
-                continue;
-            }
-            container_manager
-                .clone_volume(&service.container_configuration, &payload, volume_path)
-                .await?;
-        }
-        container_manager
-            .remove_volumes(&service.container_configuration)
-            .await?;
-    }
-
-    let updated_service = db_manager.update_service(&service, &payload).await?;
+    let new_volumes: HashSet<String> = payload.stateful_volume_paths.clone().into_iter().collect();
+    let volumes_to_remove: Vec<String> = service
+        .container_configuration
+        .stateful_volume_paths
+        .clone()
+        .into_iter()
+        .filter(|path| !new_volumes.contains(path))
+        .collect();
+    let mut configuration_with_volumes_to_remove = service.container_configuration.clone();
+    configuration_with_volumes_to_remove.stateful_volume_paths = volumes_to_remove;
+    container_manager
+        .remove_volumes(&configuration_with_volumes_to_remove)
+        .await?;
 
     container_manager
         .start_container(&updated_service.container_configuration)

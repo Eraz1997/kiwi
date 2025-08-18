@@ -15,4 +15,18 @@ impl Error {
             message: format!("port {} in use", port),
         }
     }
+
+    pub fn inconsistent_name() -> Self {
+        Self {
+            code: StatusCode::BAD_REQUEST,
+            message: "service name cannot be changed".to_string(),
+        }
+    }
+
+    pub fn inconsistent_port() -> Self {
+        Self {
+            code: StatusCode::BAD_REQUEST,
+            message: "service port cannot be changed".to_string(),
+        }
+    }
 }

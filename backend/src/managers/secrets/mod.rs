@@ -17,11 +17,7 @@ pub struct SecretsManager {
 
 impl SecretsManager {
     pub async fn new_with_loaded_or_created_secrets(settings: &Settings) -> Result<Self, Error> {
-        let home_path = settings.get_home_dir();
-        let config_folder_path = format!("{}/.kiwi", home_path);
-        let secrets_file_path = format!("{}/secrets.json", config_folder_path);
-
-        let secrets_file = File::open(secrets_file_path.clone()).await;
+        let secrets_file = File::open(settings.secrets_file_path.clone()).await;
 
         let secrets = match secrets_file {
             Ok(mut secrets_file) => {
@@ -36,9 +32,12 @@ impl SecretsManager {
             }
         };
 
+        let secrets_file_path_parts: Vec<&str> = settings.secrets_file_path.split("/").collect();
+        let config_folder_path =
+            secrets_file_path_parts[..secrets_file_path_parts.len() - 1].join("/");
         create_dir_all(config_folder_path).await?;
 
-        let mut secrets_file = File::create(secrets_file_path).await?;
+        let mut secrets_file = File::create(settings.secrets_file_path.clone()).await?;
         let json_string = serde_json::to_string(&secrets)?;
         secrets_file.write_all(json_string.as_bytes()).await?;
         secrets_file.flush().await?;

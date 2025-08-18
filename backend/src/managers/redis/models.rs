@@ -165,3 +165,42 @@ impl RedisItem for RedisRefreshToken {
         }
     }
 }
+
+pub struct RedisServicePort {
+    pub service_name: String,
+    pub port: Option<i32>,
+}
+
+impl RedisItem for RedisServicePort {
+    fn to_redis_key_suffix(&self) -> String {
+        format!("service_port:{}", self.service_name)
+    }
+
+    fn to_redis_value(&self) -> String {
+        match &self.port {
+            Some(port) => port.to_string(),
+            None => "".to_string(),
+        }
+    }
+
+    fn get_expiration(&self) -> Option<Expiration> {
+        Some(Expiration::EX(Duration::minutes(10).whole_seconds()))
+    }
+
+    fn from_redis_key_suffix_and_value(key_suffix: String, value: String) -> Result<Self, Error> {
+        let mut consumed_key = key_suffix.clone();
+        if !consumed_key.starts_with("service_port:") {
+            return Err(Error::serialisation());
+        }
+        consumed_key = consumed_key[13..].to_string();
+        let service_name = consumed_key;
+
+        let port = if value.is_empty() {
+            None
+        } else {
+            Some(value.parse::<i32>().map_err(|_| Error::serialisation())?)
+        };
+
+        Ok(RedisServicePort { service_name, port })
+    }
+}
