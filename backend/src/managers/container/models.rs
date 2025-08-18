@@ -108,7 +108,7 @@ impl ContainerConfiguration {
         })
     }
 
-    pub fn get_stateful_volume_id(self, path: &String) -> String {
+    pub fn get_stateful_volume_id(&self, path: &String) -> String {
         let raw_id = format!("{}-{}", self.name, path);
         let hashed_id = digest(raw_id);
         format!("{}-{}", self.name, hashed_id)

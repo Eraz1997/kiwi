@@ -46,11 +46,18 @@ impl TryFrom<Row> for UserInvitation {
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct InternalServiceConfiguration {
+    pub redis_username: String,
+    pub postgres_username: String,
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct ServiceData {
     pub container_configuration: ContainerConfiguration,
     pub created_at: NaiveDateTime,
     pub last_modified_at: NaiveDateTime,
     pub last_deployed_at: NaiveDateTime,
+    pub internal_configuration: InternalServiceConfiguration,
 }
 
 impl TryFrom<Row> for ServiceData {
@@ -71,6 +78,7 @@ impl TryFrom<Row> for ServiceData {
         let postgres_password: String = value.try_get("postgres_password")?;
         let redis_username: String = value.try_get("redis_username")?;
         let redis_password: String = value.try_get("redis_password")?;
+        let redis_prefix = format!("{}:", redis_username);
 
         Ok(Self {
             container_configuration: ContainerConfiguration {
@@ -100,7 +108,7 @@ impl TryFrom<Row> for ServiceData {
                     },
                     EnvironmentVariable {
                         name: "KIWI_REDIS_PREFIX".to_string(),
-                        value: redis_username,
+                        value: redis_prefix,
                     },
                 ],
                 stateful_volume_paths: value.try_get("stateful_volume_paths")?,
@@ -108,6 +116,10 @@ impl TryFrom<Row> for ServiceData {
             created_at: value.try_get("created_at")?,
             last_modified_at: value.try_get("last_modified_at")?,
             last_deployed_at: value.try_get("last_deployed_at")?,
+            internal_configuration: InternalServiceConfiguration {
+                redis_username,
+                postgres_username,
+            },
         })
     }
 }
@@ -115,6 +127,10 @@ impl TryFrom<Row> for ServiceData {
 impl ServiceData {
     pub fn with_redacted_internal_secrets(mut self) -> Self {
         self.container_configuration.internal_secrets = vec![];
+        self.internal_configuration = InternalServiceConfiguration {
+            redis_username: String::new(),
+            postgres_username: String::new(),
+        };
         self
     }
 }

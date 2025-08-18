@@ -128,4 +128,105 @@ impl DbManager {
 
         Ok(service)
     }
+
+    pub async fn delete_service(
+        &self,
+        name: &String,
+        postgres_username: &String,
+    ) -> Result<(), Error> {
+        let mut client = self.connection_pool.get().await?;
+        let transaction = client.transaction().await?;
+
+        let statement = transaction
+            .prepare_cached("DELETE FROM services WHERE name = $1")
+            .await?;
+        transaction.execute(&statement, &[name]).await?;
+
+        let statement = transaction.prepare_cached("DROP USER $1").await?;
+        transaction
+            .execute(&statement, &[postgres_username])
+            .await?;
+
+        let statement = transaction.prepare_cached("DROP DATABASE $1 FORCE").await?;
+        transaction
+            .execute(&statement, &[postgres_username])
+            .await?;
+
+        transaction.commit().await?;
+
+        Ok(())
+    }
+
+    pub async fn update_service(
+        &self,
+        old_service: &ServiceData,
+        new_configuration: &ContainerConfiguration,
+    ) -> Result<ServiceData, Error> {
+        let exposed_ports: Vec<Vec<i32>> = new_configuration
+            .exposed_ports
+            .iter()
+            .map(|port| vec![port.internal as i32, port.external as i32])
+            .collect();
+        let environment_variables: Vec<Vec<String>> = new_configuration
+            .environment_variables
+            .iter()
+            .map(|variable| vec![variable.name.clone(), variable.value.clone()])
+            .collect();
+        let secrets: Vec<Vec<String>> = new_configuration
+            .secrets
+            .iter()
+            .map(|variable| vec![variable.name.clone(), variable.value.clone()])
+            .collect();
+
+        let client = self.connection_pool.get().await?;
+
+        let statement = client
+            .prepare_cached(
+                "UPDATE services SET
+                    name = $1,
+                    image_name = $2,
+                    image_sha = $3,
+                    exposed_ports = $4,
+                    environment_variables = $5,
+                    secrets = $6,
+                    stateful_volume_paths = $7
+                    last_modified_at = now(),
+                    last_deployed_at = now()
+                RETURNING (
+                    name,
+                    image_name,
+                    image_sha,
+                    exposed_ports,
+                    environment_variables,
+                    secrets,
+                    stateful_volume_paths,
+                    postgres_username,
+                    postgres_password,
+                    redis_username,
+                    redis_password,
+                    created_at,
+                    last_modified_at,
+                    last_deployed_at
+                ) WHERE name = $8",
+            )
+            .await?;
+        let service_row = client
+            .query_one(
+                &statement,
+                &[
+                    &new_configuration.name,
+                    &new_configuration.image_name,
+                    &new_configuration.image_sha.get_value(),
+                    &exposed_ports,
+                    &environment_variables,
+                    &secrets,
+                    &new_configuration.stateful_volume_paths,
+                    &old_service.container_configuration.name,
+                ],
+            )
+            .await?;
+        let service = ServiceData::try_from(service_row)?;
+
+        Ok(service)
+    }
 }

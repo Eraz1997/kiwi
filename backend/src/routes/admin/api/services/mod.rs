@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::error::Error;
 use crate::managers::container::ContainerManager;
 use crate::managers::container::models::ContainerConfiguration;
@@ -7,7 +9,7 @@ use crate::routes::admin::api::services::models::{
     GetLogsResponse, GetServiceResponse, GetServicesResponse,
 };
 use axum::extract::{Path, Query};
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post, put};
 use axum::{Extension, Json, Router};
 use chrono::NaiveDateTime;
 
@@ -22,6 +24,8 @@ pub fn create_router() -> Router {
         .route("/{name}", get(get_service))
         .route("/{name}/logs", get(get_logs))
         .route("/", post(create_service))
+        .route("/{name}", delete(delete_service))
+        .route("/{previous_name}", put(edit_service))
 }
 
 async fn get_services(
@@ -109,4 +113,83 @@ async fn create_service(
             Err(error)
         }
     }
+}
+
+async fn delete_service(
+    Extension(container_manager): Extension<ContainerManager>,
+    Extension(db_manager): Extension<DbManager>,
+    Extension(redis_manager): Extension<RedisManager>,
+    Path(name): Path<String>,
+) -> Result<(), Error> {
+    let service = db_manager
+        .get_service_data(&name)
+        .await?
+        .ok_or(Error::container_not_found())?;
+
+    container_manager.stop_and_remove_container(&name).await?;
+    container_manager
+        .remove_volumes(&service.container_configuration)
+        .await?;
+    redis_manager
+        .delete_user(&service.internal_configuration.redis_username)
+        .await?;
+    db_manager
+        .delete_service(&name, &service.internal_configuration.postgres_username)
+        .await?;
+
+    Ok(())
+}
+
+async fn edit_service(
+    Extension(container_manager): Extension<ContainerManager>,
+    Extension(db_manager): Extension<DbManager>,
+    Path(previous_name): Path<String>,
+    Json(payload): Json<ContainerConfiguration>,
+) -> Result<(), Error> {
+    let service = db_manager
+        .get_service_data(&previous_name)
+        .await?
+        .ok_or(Error::container_not_found())?;
+
+    let already_exposed_ports: HashSet<u16> = service
+        .container_configuration
+        .exposed_ports
+        .iter()
+        .map(|port| port.external)
+        .collect();
+
+    for port in payload.exposed_ports.iter() {
+        if !already_exposed_ports.contains(&port.external)
+            && !ContainerManager::is_local_port_free(&port.external)
+        {
+            return Err(Error::port_in_use(&port.external));
+        }
+    }
+
+    container_manager
+        .stop_and_remove_container(&previous_name)
+        .await?;
+
+    if service.container_configuration.name != payload.name {
+        // volume id depends on service name
+        for volume_path in service.container_configuration.stateful_volume_paths.iter() {
+            if !payload.stateful_volume_paths.contains(volume_path) {
+                continue;
+            }
+            container_manager
+                .clone_volume(&service.container_configuration, &payload, volume_path)
+                .await?;
+        }
+        container_manager
+            .remove_volumes(&service.container_configuration)
+            .await?;
+    }
+
+    let updated_service = db_manager.update_service(&service, &payload).await?;
+
+    container_manager
+        .start_container(&updated_service.container_configuration)
+        .await?;
+
+    Ok(())
 }

@@ -2,11 +2,14 @@ use std::collections::HashMap;
 use std::net::{Ipv4Addr, SocketAddrV4, TcpListener};
 
 use crate::error::Error;
+use crate::managers::container::constants::VOLUME_CLONER_IMAGE_TAG;
 use crate::managers::container::models::Log;
 use bollard::container::LogOutput;
 use bollard::query_parameters::LogsOptionsBuilder;
 #[allow(deprecated)]
 use bollard::volume::CreateVolumeOptions;
+#[allow(deprecated)]
+use bollard::volume::RemoveVolumeOptions;
 #[allow(deprecated)]
 use bollard::{
     Docker,
@@ -22,7 +25,9 @@ use chrono::NaiveDateTime;
 use futures::TryStreamExt;
 use futures::stream::StreamExt;
 use models::ContainerConfiguration;
+use uuid::Uuid;
 
+mod constants;
 pub mod error;
 pub mod models;
 
@@ -110,12 +115,7 @@ impl ContainerManager {
         let volumes: Vec<(String, String)> = configuration
             .stateful_volume_paths
             .iter()
-            .map(|path| {
-                (
-                    configuration.clone().get_stateful_volume_id(path),
-                    path.clone(),
-                )
-            })
+            .map(|path| (configuration.get_stateful_volume_id(path), path.clone()))
             .collect();
 
         for (volume_id, _) in volumes.iter() {
@@ -148,20 +148,7 @@ impl ContainerManager {
             configuration.image_sha.get_value()
         );
 
-        let create_image_options = CreateImageOptionsBuilder::new()
-            .from_image(image_tag.as_str())
-            .build();
-        let mut image_pull_stream =
-            self.client
-                .create_image(Some(create_image_options), None, None);
-
-        tracing::info!("started pulling image {}", image_tag);
-
-        while let Some(pull_result) = image_pull_stream.next().await {
-            pull_result?;
-        }
-
-        tracing::info!("pulled image {}", image_tag);
+        self.pull_image(&image_tag).await?;
 
         let options = CreateContainerOptionsBuilder::new()
             .name(&configuration.name)
@@ -195,13 +182,7 @@ impl ContainerManager {
         let volume_bindings = configuration
             .stateful_volume_paths
             .iter()
-            .map(|path| {
-                format!(
-                    "{}:{}",
-                    configuration.clone().get_stateful_volume_id(path),
-                    path
-                )
-            })
+            .map(|path| format!("{}:{}", configuration.get_stateful_volume_id(path), path))
             .collect();
 
         let configuration_body = ContainerCreateBody {
@@ -233,41 +214,8 @@ impl ContainerManager {
         &self,
         configuration: &ContainerConfiguration,
     ) -> Result<(), Error> {
-        let duplicate_network = self
-            .client
-            .list_networks(None::<ListNetworksOptions>)
-            .await?
-            .into_iter()
-            .find(|network| {
-                network
-                    .name
-                    .clone()
-                    .filter(|name| *name == configuration.name)
-                    .is_some()
-            });
-
-        if let Some(duplicate_network) = duplicate_network {
-            let network_name = duplicate_network
-                .name
-                .clone()
-                .ok_or(Error::network_name_not_found())?;
-            if let Some(attached_containers) = duplicate_network.containers {
-                for container in attached_containers.values() {
-                    #[allow(deprecated)]
-                    let options = DisconnectNetworkOptions {
-                        container: container
-                            .name
-                            .clone()
-                            .ok_or(Error::container_id_not_found())?,
-                        force: true,
-                    };
-                    self.client
-                        .disconnect_network(network_name.as_str(), options)
-                        .await?;
-                }
-            }
-            self.client.remove_network(network_name.as_str()).await?;
-        }
+        self.detach_and_remove_any_network(&configuration.name)
+            .await?;
 
         #[allow(deprecated)]
         let options = CreateNetworkOptions {
@@ -291,22 +239,11 @@ impl ContainerManager {
     }
 
     pub async fn get_container_status(&self, name: &str) -> Result<String, Error> {
-        let list_options = ListContainersOptionsBuilder::new().all(true).build();
-        let containers = self.client.list_containers(Some(list_options)).await?;
-
-        let container = containers
-            .into_iter()
-            .find(|container| {
-                container
-                    .names
-                    .clone()
-                    .unwrap_or_default()
-                    .iter()
-                    .any(|container_name| *container_name == name)
-            })
-            .ok_or(Error::container_id_not_found())?;
-
-        let status = container.status.unwrap_or("Unknown".to_string());
+        let status = self
+            .get_container_status_enum(name)
+            .await?
+            .map(|status| status.to_string())
+            .unwrap_or("Unknown".to_string());
         Ok(status)
     }
 
@@ -329,8 +266,200 @@ impl ContainerManager {
         Ok(logs)
     }
 
+    pub async fn stop_and_remove_container(&self, name: &str) -> Result<(), Error> {
+        self.detach_and_remove_any_network(name).await?;
+        let status = self.get_container_status_enum(name).await?;
+
+        match status {
+            Some(ContainerSummaryStateEnum::CREATED)
+            | Some(ContainerSummaryStateEnum::RUNNING)
+            | Some(ContainerSummaryStateEnum::RESTARTING) => {
+                self.client
+                    .stop_container(name, None::<StopContainerOptions>)
+                    .await?;
+            }
+            _ => {}
+        }
+
+        let options = RemoveContainerOptionsBuilder::new().force(true).build();
+        self.client.remove_container(name, Some(options)).await?;
+
+        Ok(())
+    }
+
+    pub async fn remove_volumes(
+        &self,
+        configuration: &ContainerConfiguration,
+    ) -> Result<(), Error> {
+        let volume_ids: Vec<String> = configuration
+            .stateful_volume_paths
+            .iter()
+            .map(|path| configuration.get_stateful_volume_id(path))
+            .collect();
+
+        for volume_id in volume_ids {
+            #[allow(deprecated)]
+            let options = RemoveVolumeOptions { force: true };
+            self.client.remove_volume(&volume_id, Some(options)).await?;
+        }
+
+        Ok(())
+    }
+
+    pub async fn clone_volume(
+        &self,
+        old_configuration: &ContainerConfiguration,
+        new_configuration: &ContainerConfiguration,
+        path: &String,
+    ) -> Result<(), Error> {
+        let old_volume_id = old_configuration.get_stateful_volume_id(path);
+        let new_volume_id = new_configuration.get_stateful_volume_id(path);
+
+        #[allow(deprecated)]
+        let options = CreateVolumeOptions {
+            name: new_volume_id.clone(),
+            ..Default::default()
+        };
+        self.client.create_volume(options).await?;
+        let volume_bindings = vec![
+            format!("{}:{}", old_volume_id, "/from"),
+            format!("{}:{}", new_volume_id, "/to"),
+        ];
+
+        let configuration_body = ContainerCreateBody {
+            host_config: Some(HostConfig {
+                binds: Some(volume_bindings),
+                ..Default::default()
+            }),
+            image: Some(VOLUME_CLONER_IMAGE_TAG.to_string()),
+            cmd: Some(vec![
+                "sh".to_string(),
+                "-c".to_string(),
+                "cp -a /from/. /to/".to_string(),
+            ]),
+            ..Default::default()
+        };
+
+        self.pull_image(VOLUME_CLONER_IMAGE_TAG).await?;
+
+        let container_name = Uuid::new_v4().to_string();
+        let options = CreateContainerOptionsBuilder::new()
+            .name(&container_name)
+            .build();
+
+        tracing::info!("starting volume cloner for volume with path: {}", path);
+
+        self.client
+            .create_container(Some(options), configuration_body)
+            .await?;
+        self.client
+            .start_container(&container_name, None::<StartContainerOptions>)
+            .await?;
+
+        let options = LogsOptionsBuilder::new()
+            .stdout(true)
+            .stderr(true)
+            .follow(true)
+            .build();
+        let mut logs = self.client.logs(&container_name, Some(options));
+        while logs.try_next().await?.is_some() {}
+
+        let remove_options = RemoveContainerOptionsBuilder::new().force(true).build();
+        self.client
+            .remove_container(&container_name, Some(remove_options))
+            .await?;
+
+        tracing::info!(
+            "successfully removed volume cloner for volume with path: {}",
+            path
+        );
+
+        Ok(())
+    }
+
     pub fn is_local_port_free(port: &u16) -> bool {
         let ipv4 = SocketAddrV4::new(Ipv4Addr::LOCALHOST, *port);
         TcpListener::bind(ipv4).is_ok()
+    }
+
+    async fn detach_and_remove_any_network(&self, name: &str) -> Result<(), Error> {
+        let network_to_delete = self
+            .client
+            .list_networks(None::<ListNetworksOptions>)
+            .await?
+            .into_iter()
+            .find(|network| {
+                network
+                    .name
+                    .clone()
+                    .filter(|network_name| *network_name == name)
+                    .is_some()
+            });
+
+        if let Some(network_to_delete) = network_to_delete {
+            let network_name = network_to_delete
+                .name
+                .clone()
+                .ok_or(Error::network_name_not_found())?;
+            if let Some(attached_containers) = network_to_delete.containers {
+                for container in attached_containers.values() {
+                    #[allow(deprecated)]
+                    let options = DisconnectNetworkOptions {
+                        container: container
+                            .name
+                            .clone()
+                            .ok_or(Error::container_id_not_found())?,
+                        force: true,
+                    };
+                    self.client
+                        .disconnect_network(network_name.as_str(), options)
+                        .await?;
+                }
+            }
+            self.client.remove_network(network_name.as_str()).await?;
+        }
+
+        Ok(())
+    }
+
+    async fn get_container_status_enum(
+        &self,
+        name: &str,
+    ) -> Result<Option<ContainerSummaryStateEnum>, Error> {
+        let list_options = ListContainersOptionsBuilder::new().all(true).build();
+        let containers = self.client.list_containers(Some(list_options)).await?;
+
+        let container = containers
+            .into_iter()
+            .find(|container| {
+                container
+                    .names
+                    .clone()
+                    .unwrap_or_default()
+                    .iter()
+                    .any(|container_name| *container_name == name)
+            })
+            .ok_or(Error::container_id_not_found())?;
+
+        Ok(container.state)
+    }
+
+    async fn pull_image(&self, image_tag: &str) -> Result<(), Error> {
+        let create_image_options = CreateImageOptionsBuilder::new()
+            .from_image(image_tag)
+            .build();
+        let mut image_pull_stream =
+            self.client
+                .create_image(Some(create_image_options), None, None);
+
+        tracing::info!("started pulling image {}", image_tag);
+
+        while let Some(pull_result) = image_pull_stream.next().await {
+            pull_result?;
+        }
+
+        tracing::info!("pulled image {}", image_tag);
+
+        Ok(())
     }
 }
