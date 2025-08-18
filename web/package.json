@@ -7,7 +7,7 @@
     "dev": "vite --port 3000",
     "format": "prettier . --write './**/*.{js,ts,jsx,tsx}'",
     "lint": "eslint . --fix; tsc --project tsconfig.lint.json",
-    "prepare": "npx @park-ui/cli components add --all && panda codegen"
+    "prepare": "npx @park-ui/cli components add --all && panda codegen && sed -i '1d' src/components/ui/select.tsx"
   },
   "license": "MIT",
   "devDependencies": {
