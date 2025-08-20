@@ -4,6 +4,7 @@
 
 - `.github` contains CI workflows to build Kiwi
 - `backend` contains the code of the REST API backend, written in Rust
+- `ci` contains a composite Github Action to deploy services to a Kiwi instance
 - `web` contains the code of the web app, written in TypeScript using SolidJS and Park UI
 
 ## Setup 🪛

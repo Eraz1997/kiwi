@@ -1,0 +1,27 @@
+name: Deploy to Kiwi 🚀
+description: Deploy a new version of a service hosted on a Kiwi instance.
+
+inputs:
+  kiwi-domain:
+    description: the domain used to access the Kiwi instance, e.g. "kiwi-application.com"
+    type: string
+    required: true
+  service-name:
+    description: the name of the service to deploy
+    type: string
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Ensure cURL is installed
+      run: |
+        sudo apt update
+        sudo apt install -y curl
+
+    - name: Deploy service
+      run: |
+        curl -X POST https://ci.${{ inputs.kiwi-domain }}/deploy/${{ inputs.service-name }} \
+          -H "Content-Type: application/json" \
+          -d '{"oidc_token": "${{ secrets.GITHUB_TOKEN }}", "image_sha": "${{ github.sha }}"}' \
+          --fail-with-body
