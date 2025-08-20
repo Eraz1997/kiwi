@@ -2,10 +2,11 @@ use axum::{
     extract::Request,
     http::{Uri, header::HOST},
 };
+use hyper::body::Incoming;
 
 use crate::constants::LOCALHOST_DOMAIN_WITH_COLON;
 
-pub fn subdomain_middleware(mut request: Request) -> Request {
+pub fn subdomain_middleware(mut request: Request<Incoming>) -> Request<Incoming> {
     let subdomain = request
         .uri()
         .authority()
