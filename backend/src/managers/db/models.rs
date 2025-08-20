@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::error::Error;
 use crate::managers::container::models::{
-    ContainerConfiguration, EnvironmentVariable, ExposedPort, ImageSha,
+    ContainerConfiguration, EnvironmentVariable, ExposedPort, GithubRepository, ImageSha,
 };
 use crate::models::UserRole;
 
@@ -75,6 +75,12 @@ impl TryFrom<Row> for ServiceData {
         let redis_username: String = value.try_get("redis_username")?;
         let redis_password: String = value.try_get("redis_password")?;
         let redis_prefix = format!("{}:", redis_username);
+        let github_repository =
+            if let Some(repo) = value.try_get::<&str, Option<String>>("github_repository")? {
+                Some(GithubRepository::try_from(repo)?)
+            } else {
+                None
+            };
 
         Ok(Self {
             container_configuration: ContainerConfiguration {
@@ -108,6 +114,7 @@ impl TryFrom<Row> for ServiceData {
                     },
                 ],
                 stateful_volume_paths: value.try_get("stateful_volume_paths")?,
+                github_repository,
             },
             created_at: value.try_get("created_at")?,
             last_modified_at: value.try_get("last_modified_at")?,

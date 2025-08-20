@@ -68,9 +68,10 @@ impl DbManager {
                 postgres_username,
                 postgres_password,
                 redis_username,
-                redis_password
+                redis_password,
+                github_repository
             ) VALUES (
-                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
             ) RETURNING (
                 name,
                 image_name,
@@ -85,7 +86,8 @@ impl DbManager {
                 redis_password,
                 created_at,
                 last_modified_at,
-                last_deployed_at
+                last_deployed_at,
+                github_repository
             )",
             )
             .await?;
@@ -104,6 +106,10 @@ impl DbManager {
                     &postgres_password,
                     &redis_username,
                     &redis_password,
+                    &configuration
+                        .github_repository
+                        .clone()
+                        .map(|repo| repo.to_string()),
                 ],
             )
             .await?;
@@ -187,7 +193,8 @@ impl DbManager {
                     exposed_port = $4,
                     environment_variables = $5,
                     secrets = $6,
-                    stateful_volume_paths = $7
+                    stateful_volume_paths = $7,
+                    github_repository = $8,
                     last_modified_at = now(),
                     last_deployed_at = now()
                 RETURNING (
@@ -204,8 +211,9 @@ impl DbManager {
                     redis_password,
                     created_at,
                     last_modified_at,
-                    last_deployed_at
-                ) WHERE name = $8",
+                    last_deployed_at,
+                    github_repository,
+                ) WHERE name = $9",
             )
             .await?;
         let service_row = client
@@ -219,6 +227,10 @@ impl DbManager {
                     &environment_variables,
                     &secrets,
                     &new_configuration.stateful_volume_paths,
+                    &new_configuration
+                        .github_repository
+                        .clone()
+                        .map(|repo| repo.to_string()),
                     &old_service.container_configuration.name,
                 ],
             )

@@ -2,6 +2,7 @@ use crate::error::Error;
 use crate::logger::Logger;
 use crate::managers::crypto::CryptoManager;
 use crate::managers::local_http::LocalHttpManager;
+use crate::managers::oidc::OidcManager;
 use crate::managers::redis::RedisManager;
 use crate::managers::secrets::SecretsManager;
 use crate::server::Server;
@@ -37,6 +38,7 @@ async fn main() -> Result<(), Error> {
 
     let secrets_manager = SecretsManager::new_with_loaded_or_created_secrets(&settings).await?;
     let container_manager = ContainerManager::new().await?;
+    let oidc_manager = OidcManager::new().await?;
 
     let crypto_pepper = secrets_manager.crypto_pepper();
     let db_admin_username = secrets_manager.db_admin_username();
@@ -90,7 +92,8 @@ async fn main() -> Result<(), Error> {
         .layer(Extension(container_manager))
         .layer(Extension(crypto_manager))
         .layer(Extension(redis_manager))
-        .layer(Extension(local_http_manager));
+        .layer(Extension(local_http_manager))
+        .layer(Extension(oidc_manager));
 
     Server::new(&settings).start(&app).await?;
 

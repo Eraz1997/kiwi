@@ -14,12 +14,14 @@ use crate::{
 
 pub mod admin;
 pub mod auth;
+pub mod ci;
 mod error;
 
 pub fn create_router(settings: &Settings) -> Router {
     Router::new()
         .nest("/admin", admin::create_router(settings))
         .nest("/auth", auth::create_router(settings))
+        .nest("/ci", ci::create_router())
         .route("/{service}/{*path}", any(forward_to_service))
 }
 

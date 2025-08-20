@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use bollard::container::LogOutput;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -47,6 +49,40 @@ pub struct EnvironmentVariable {
     pub value: String,
 }
 
+#[derive(Serialize, Deserialize, Clone, PartialEq)]
+pub struct GithubRepository {
+    pub owner: String,
+    pub name: String,
+}
+
+impl TryFrom<String> for GithubRepository {
+    type Error = Error;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let parts: Vec<String> = value.split("/").map(|part| part.to_string()).collect();
+        let valid_part_regex = Regex::new(r"^[a-zA-Z0-9\-_]+$")?;
+
+        if parts.iter().any(|part| !valid_part_regex.is_match(part)) || parts.len() != 2 {
+            return Err(Error::serialisation());
+        }
+
+        if let (Some(owner), Some(name)) = (parts.first(), parts.get(1)) {
+            Ok(Self {
+                owner: owner.clone(),
+                name: name.clone(),
+            })
+        } else {
+            Err(Error::serialisation())
+        }
+    }
+}
+
+impl Display for GithubRepository {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "{}/{}", self.owner, self.name)
+    }
+}
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ContainerConfiguration {
     pub name: String,
@@ -57,6 +93,7 @@ pub struct ContainerConfiguration {
     pub secrets: Vec<EnvironmentVariable>,
     pub internal_secrets: Vec<EnvironmentVariable>,
     pub stateful_volume_paths: Vec<String>,
+    pub github_repository: Option<GithubRepository>,
 }
 
 impl ContainerConfiguration {
@@ -87,6 +124,7 @@ impl ContainerConfiguration {
                 },
             ],
             stateful_volume_paths: vec!["/var/lib/postgresql/data".to_string()],
+            github_repository: None,
         })
     }
 
@@ -105,6 +143,7 @@ impl ContainerConfiguration {
                 value: admin_password.to_string(),
             }],
             stateful_volume_paths: vec!["/bitnami/redis/data".to_string()],
+            github_repository: None,
         })
     }
 
