@@ -34,7 +34,7 @@ impl CryptoManager {
         Ok(matches)
     }
 
-    fn get_hasher(&self) -> Result<Argon2, Error> {
+    fn get_hasher(&self) -> Result<Argon2<'_>, Error> {
         Ok(Argon2::new_with_secret(
             self.pepper.as_bytes(),
             argon2::Algorithm::Argon2id,
