@@ -18,7 +18,9 @@ export type Page =
   | "internal/not-found"
   | "admin"
   | "admin/users"
-  | "admin/services";
+  | "admin/services"
+  | "admin/services/new"
+  | "admin/services/edit";
 
 type QueryParams = {
   [index: string]: string;
@@ -176,6 +178,12 @@ const getPageFromLocation = (location: Location): Page => {
   }
   if (subdomain === "admin" && path === "/services") {
     return "admin/services";
+  }
+  if (subdomain === "admin" && path === "/services/new") {
+    return "admin/services/new";
+  }
+  if (subdomain === "admin" && path === "/services/edit") {
+    return "admin/services/edit";
   }
   return "internal/not-found";
 };

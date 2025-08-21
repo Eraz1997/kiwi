@@ -28,6 +28,12 @@ export const NavigationBar: Component = () => {
     if (currentPage() === "admin/services") {
       return "Services";
     }
+    if (currentPage() === "admin/services/new") {
+      return "Create Service";
+    }
+    if (currentPage() === "admin/services/edit") {
+      return "Service Details";
+    }
     return "";
   };
   const backPage = (): Page | null => {
@@ -36,6 +42,12 @@ export const NavigationBar: Component = () => {
     }
     if (currentPage() === "admin/services") {
       return "admin";
+    }
+    if (currentPage() === "admin/services/new") {
+      return "admin/services";
+    }
+    if (currentPage() === "admin/services/edit") {
+      return "admin/services";
     }
     return null;
   };

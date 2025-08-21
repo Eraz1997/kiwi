@@ -12,6 +12,7 @@ use axum::extract::{Path, Query};
 use axum::routing::{delete, get, post, put};
 use axum::{Extension, Json, Router};
 use chrono::NaiveDateTime;
+use regex::Regex;
 
 use crate::managers::db::DbManager;
 
@@ -79,6 +80,11 @@ async fn create_service(
 ) -> Result<(), Error> {
     if !ContainerManager::is_local_port_free(&payload.exposed_port.external) {
         return Err(Error::port_in_use(&payload.exposed_port.external));
+    }
+
+    let name_regex = Regex::new(r"^[a-zA-Z0-9-_]{3,32}$")?;
+    if !name_regex.is_match(&payload.name) {
+        return Err(Error::invalid_name());
     }
 
     let postgres_username = Secret::default().get();

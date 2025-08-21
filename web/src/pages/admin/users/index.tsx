@@ -1,5 +1,5 @@
-import { DeleteUserDialog } from "./deleteUserDialog";
-import { InviteUserDialog } from "./inviteUserDialog";
+import { DeleteUserDialog } from "./components/deleteUserDialog";
+import { InviteUserDialog } from "./components/inviteUserDialog";
 import { X } from "lucide-solid";
 import { Component, For, createResource } from "solid-js";
 import { NavigationBar } from "src/components/navigationBar";

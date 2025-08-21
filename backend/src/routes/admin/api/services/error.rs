@@ -9,6 +9,13 @@ impl Error {
         }
     }
 
+    pub fn invalid_name() -> Self {
+        Self {
+            code: StatusCode::BAD_REQUEST,
+            message: "invalid name".to_string(),
+        }
+    }
+
     pub fn port_in_use(port: &u16) -> Self {
         Self {
             code: StatusCode::BAD_REQUEST,
