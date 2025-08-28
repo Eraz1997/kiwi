@@ -60,9 +60,6 @@ cargo run
 
 The backend service is available at `http://<service>.kiwi-local.com:5000/<path>`. Paths starting with `/api` will be forwarded to API handlers, while the others will be forwarded to the frontend server, if any is running.
 
-> [!NOTE]
-> Due to a known bug, root paths might give `404`. To access the root UI page append two slashes instead of one, e.g. `http://<service>.kiwi-local.com:5000//`.
-
 ## Lint and Format 🧽
 
 ### Web 🕷️

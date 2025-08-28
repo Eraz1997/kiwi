@@ -43,7 +43,7 @@ impl ExposedPort {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct EnvironmentVariable {
     pub name: String,
     pub value: String,

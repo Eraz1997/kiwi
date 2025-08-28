@@ -4,7 +4,7 @@ use std::net::{Ipv4Addr, SocketAddrV4, TcpListener};
 use crate::error::Error;
 use crate::managers::container::models::Log;
 use bollard::container::LogOutput;
-use bollard::query_parameters::LogsOptionsBuilder;
+use bollard::query_parameters::{InspectNetworkOptions, LogsOptionsBuilder};
 #[allow(deprecated)]
 use bollard::volume::CreateVolumeOptions;
 #[allow(deprecated)]
@@ -323,38 +323,39 @@ impl ContainerManager {
     async fn detach_and_remove_any_network(&self, name: &str) -> Result<(), Error> {
         let network_to_delete = self
             .client
-            .list_networks(None::<ListNetworksOptions>)
-            .await?
-            .into_iter()
-            .find(|network| {
-                network
+            .inspect_network(name, None::<InspectNetworkOptions>)
+            .await;
+
+        match network_to_delete {
+            Ok(network_to_delete) => {
+                let network_name = network_to_delete
                     .name
                     .clone()
-                    .filter(|network_name| *network_name == name)
-                    .is_some()
-            });
-
-        if let Some(network_to_delete) = network_to_delete {
-            let network_name = network_to_delete
-                .name
-                .clone()
-                .ok_or(Error::network_name_not_found())?;
-            if let Some(attached_containers) = network_to_delete.containers {
-                for container in attached_containers.values() {
-                    #[allow(deprecated)]
-                    let options = DisconnectNetworkOptions {
-                        container: container
-                            .name
-                            .clone()
-                            .ok_or(Error::container_id_not_found())?,
-                        force: true,
-                    };
-                    self.client
-                        .disconnect_network(network_name.as_str(), options)
-                        .await?;
+                    .ok_or(Error::network_name_not_found())?;
+                if let Some(attached_containers) = network_to_delete.containers {
+                    for container in attached_containers.values() {
+                        #[allow(deprecated)]
+                        let options = DisconnectNetworkOptions {
+                            container: container
+                                .name
+                                .clone()
+                                .ok_or(Error::container_id_not_found())?,
+                            force: true,
+                        };
+                        self.client
+                            .disconnect_network(network_name.as_str(), options)
+                            .await?;
+                    }
                 }
+                self.client.remove_network(network_name.as_str()).await?;
             }
-            self.client.remove_network(network_name.as_str()).await?;
+            Err(bollard::errors::Error::DockerResponseServerError {
+                status_code: 404,
+                message: _,
+            }) => {}
+            Err(error) => {
+                Err(error)?;
+            }
         }
 
         Ok(())
@@ -375,7 +376,9 @@ impl ContainerManager {
                     .clone()
                     .unwrap_or_default()
                     .iter()
-                    .any(|container_name| *container_name == name)
+                    .any(|container_name| {
+                        *container_name == name || *container_name == format!("/{}", name)
+                    })
             })
             .ok_or(Error::container_id_not_found())?;
 

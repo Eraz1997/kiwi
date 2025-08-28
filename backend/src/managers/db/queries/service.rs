@@ -1,3 +1,5 @@
+use postgres_types::Json;
+
 use crate::error::Error;
 use crate::managers::container::models::ContainerConfiguration;
 use crate::managers::db::DbManager;
@@ -41,16 +43,8 @@ impl DbManager {
             configuration.exposed_port.internal as i32,
             configuration.exposed_port.external as i32,
         ];
-        let environment_variables: Vec<Vec<String>> = configuration
-            .environment_variables
-            .iter()
-            .map(|variable| vec![variable.name.clone(), variable.value.clone()])
-            .collect();
-        let secrets: Vec<Vec<String>> = configuration
-            .secrets
-            .iter()
-            .map(|variable| vec![variable.name.clone(), variable.value.clone()])
-            .collect();
+        let environment_variables = Json(configuration.environment_variables.clone());
+        let secrets = Json(configuration.secrets.clone());
 
         let mut client = self.connection_pool.get().await?;
         let transaction = client.transaction().await?;
@@ -72,7 +66,7 @@ impl DbManager {
                 github_repository
             ) VALUES (
                 $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
-            ) RETURNING (
+            ) RETURNING
                 name,
                 image_name,
                 image_sha,
@@ -87,8 +81,7 @@ impl DbManager {
                 created_at,
                 last_modified_at,
                 last_deployed_at,
-                github_repository
-            )",
+                github_repository",
             )
             .await?;
         let service_row = transaction
@@ -115,21 +108,20 @@ impl DbManager {
             .await?;
         let service = ServiceData::try_from(service_row)?;
 
-        let statement = transaction
-            .prepare_cached("CREATE USER $1 NOCREATEDB NOCREATEUSER PASSWORD $2 ENCRYPTED")
-            .await?;
-        transaction
-            .execute(&statement, &[postgres_username, postgres_password])
-            .await?;
-
-        let statement = transaction
-            .prepare_cached("CREATE DATABASE $1 WITH OWNER $1")
-            .await?;
-        transaction
-            .execute(&statement, &[postgres_username, postgres_password])
-            .await?;
-
+        let query_string = format!(
+            "CREATE ROLE {} NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT LOGIN ENCRYPTED PASSWORD '{}'",
+            postgres_username, postgres_password
+        );
+        let statement = transaction.prepare_cached(&query_string).await?;
+        transaction.execute(&statement, &[]).await?;
         transaction.commit().await?;
+
+        let query_string = format!(
+            "CREATE DATABASE {} WITH OWNER {}",
+            postgres_username, postgres_username
+        );
+        let statement = client.prepare_cached(&query_string).await?;
+        client.execute(&statement, &[]).await?;
 
         Ok(service)
     }
@@ -147,17 +139,17 @@ impl DbManager {
             .await?;
         transaction.execute(&statement, &[name]).await?;
 
-        let statement = transaction.prepare_cached("DROP USER $1").await?;
-        transaction
-            .execute(&statement, &[postgres_username])
-            .await?;
-
-        let statement = transaction.prepare_cached("DROP DATABASE $1 FORCE").await?;
+        let query_string = format!("DROP ROLE {}", postgres_username);
+        let statement = transaction.prepare_cached(&query_string).await?;
         transaction
             .execute(&statement, &[postgres_username])
             .await?;
 
         transaction.commit().await?;
+
+        let query_string = format!("DROP DATABASE {} FORCE", postgres_username);
+        let statement = client.prepare_cached(&query_string).await?;
+        client.execute(&statement, &[postgres_username]).await?;
 
         Ok(())
     }
@@ -171,16 +163,8 @@ impl DbManager {
             new_configuration.exposed_port.internal as i32,
             new_configuration.exposed_port.external as i32,
         ];
-        let environment_variables: Vec<Vec<String>> = new_configuration
-            .environment_variables
-            .iter()
-            .map(|variable| vec![variable.name.clone(), variable.value.clone()])
-            .collect();
-        let secrets: Vec<Vec<String>> = new_configuration
-            .secrets
-            .iter()
-            .map(|variable| vec![variable.name.clone(), variable.value.clone()])
-            .collect();
+        let environment_variables = Json(new_configuration.environment_variables.clone());
+        let secrets = Json(new_configuration.secrets.clone());
 
         let client = self.connection_pool.get().await?;
 
@@ -197,7 +181,8 @@ impl DbManager {
                     github_repository = $8,
                     last_modified_at = now(),
                     last_deployed_at = now()
-                RETURNING (
+                WHERE name = $9
+                RETURNING
                     name,
                     image_name,
                     image_sha,
@@ -212,8 +197,7 @@ impl DbManager {
                     created_at,
                     last_modified_at,
                     last_deployed_at,
-                    github_repository,
-                ) WHERE name = $9",
+                    github_repository",
             )
             .await?;
         let service_row = client

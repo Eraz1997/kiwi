@@ -42,12 +42,18 @@ pub fn subdomain_middleware(mut request: Request<Incoming>) -> Request<Incoming>
     };
 
     let path_and_query = match subdomain {
-        Some(route) => format!("/{}{}", route, requested_path_and_query),
+        Some(route) => format!("/{}/{}", route, requested_path_and_query),
         None => "".to_string(),
-    };
+    }
+    .replace("//", "/")
+    .replace("/?", "?")
+    .trim_end_matches("/")
+    .to_string();
 
-    let mut uri_builder = Uri::builder().path_and_query(path_and_query);
-
+    let mut uri_builder = Uri::builder();
+    if !path_and_query.is_empty() {
+        uri_builder = uri_builder.path_and_query(path_and_query);
+    }
     if let Some(scheme) = uri_parts.scheme {
         uri_builder = uri_builder.scheme(scheme);
     }

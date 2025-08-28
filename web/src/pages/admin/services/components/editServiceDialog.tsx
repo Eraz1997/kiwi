@@ -1,4 +1,4 @@
-import { Orbit, Trash2, X } from "lucide-solid";
+import { Orbit, ShieldAlert, X } from "lucide-solid";
 import { Component } from "solid-js";
 import { Button } from "src/components/ui/button";
 import { Dialog } from "src/components/ui/dialog";
@@ -16,7 +16,7 @@ export const EditServiceDialog: Component<Props> = (props) => {
       <Dialog.Root>
         <Dialog.Trigger>
           <Button
-            bgColor={{ base: "red.7", _hover: "red.8" }}
+            bgColor={{ base: "amber.light.9", _hover: "amber.light.11" }}
             loading={props.loading}
           >
             Save Any Changes
@@ -40,12 +40,15 @@ export const EditServiceDialog: Component<Props> = (props) => {
                 </Dialog.CloseTrigger>
                 <Dialog.CloseTrigger>
                   <Button
-                    bgColor={{ base: "red.7", _hover: "red.8" }}
+                    bgColor={{
+                      base: "amber.light.9",
+                      _hover: "amber.light.11",
+                    }}
                     loading={props.loading}
                     onClick={props.onConfirm}
                   >
                     Confirm
-                    <Trash2 />
+                    <ShieldAlert />
                   </Button>
                 </Dialog.CloseTrigger>
               </HStack>

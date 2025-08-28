@@ -6,12 +6,11 @@ use crate::managers::container::models::ContainerConfiguration;
 use crate::managers::redis::RedisManager;
 use crate::managers::secrets::models::Secret;
 use crate::routes::admin::api::services::models::{
-    GetLogsResponse, GetServiceResponse, GetServicesResponse,
+    GetLogsQuery, GetLogsResponse, GetServiceResponse, GetServicesResponse,
 };
 use axum::extract::{Path, Query};
 use axum::routing::{delete, get, post, put};
 use axum::{Extension, Json, Router};
-use chrono::NaiveDateTime;
 use regex::Regex;
 
 use crate::managers::db::DbManager;
@@ -62,8 +61,7 @@ async fn get_service(
 async fn get_logs(
     Extension(container_manager): Extension<ContainerManager>,
     Path(name): Path<String>,
-    Query(from_date): Query<NaiveDateTime>,
-    Query(to_date): Query<NaiveDateTime>,
+    Query(GetLogsQuery { from_date, to_date }): Query<GetLogsQuery>,
 ) -> Result<Json<GetLogsResponse>, Error> {
     let logs = container_manager
         .get_container_logs(&name, from_date, to_date)
@@ -87,7 +85,7 @@ async fn create_service(
         return Err(Error::invalid_name());
     }
 
-    let postgres_username = Secret::default().get();
+    let postgres_username = Secret::generate(32).get();
     let postgres_password = Secret::default().get();
     let redis_username = Secret::default().get();
     let redis_password = Secret::default().get();

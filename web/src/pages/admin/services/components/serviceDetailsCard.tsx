@@ -124,13 +124,14 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
         </Card.Header>
         <Card.Body>
           <VStack gap="12" alignItems="start">
-            <VStack gap="4" alignItems="start">
+            <VStack gap="4" alignItems="start" width="full">
               <Heading size="md" display="flex" gap="2">
                 General <Info />
               </Heading>
               <Field.Root
                 invalid={!!props.containerConfiguration.name && !isNameValid()}
                 disabled={props.mode === "edit"}
+                width="full"
               >
                 <Field.Label>Name</Field.Label>
                 <Field.Input
@@ -142,12 +143,12 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
                 <Field.ErrorText>Please enter a valid name</Field.ErrorText>
               </Field.Root>
             </VStack>
-            <VStack gap="4" alignItems="start">
+            <VStack gap="4" alignItems="start" width="full">
               <Heading size="md" display="flex" gap="2">
                 Docker Image <Shrimp />
               </Heading>
-              <HStack gap="2">
-                <Field.Root>
+              <HStack gap="2" width="full">
+                <Field.Root width="full">
                   <Field.Label>Name</Field.Label>
                   <Field.Input
                     onChange={(event) =>
@@ -164,6 +165,7 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
                     !!props.containerConfiguration.image_sha.value &&
                     !isShaValid()
                   }
+                  width="full"
                 >
                   <Field.Label>Sha</Field.Label>
                   <Field.Input
@@ -180,12 +182,12 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
                 </Field.Root>
               </HStack>
             </VStack>
-            <VStack gap="4" alignItems="start">
+            <VStack gap="4" alignItems="start" width="full">
               <Heading size="md" display="flex" gap="2">
-                Github Repository <GitBranchPlus />
+                Github Repository (Optional) <GitBranchPlus />
               </Heading>
-              <HStack gap="2">
-                <Field.Root>
+              <HStack gap="2" width="full">
+                <Field.Root width="full">
                   <Field.Label>Owner</Field.Label>
                   <Field.Input
                     onChange={(event) =>
@@ -200,7 +202,7 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
                     }
                   />
                 </Field.Root>
-                <Field.Root>
+                <Field.Root width="full">
                   <Field.Label>Name</Field.Label>
                   <Field.Input
                     onChange={(event) =>
@@ -215,12 +217,12 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
                 </Field.Root>
               </HStack>
             </VStack>
-            <VStack gap="4" alignItems="start">
+            <VStack gap="4" alignItems="start" width="full">
               <Heading size="md" display="flex" gap="2">
                 Networking <Globe />
               </Heading>
-              <HStack gap="2">
-                <Field.Root>
+              <HStack gap="2" width="full">
+                <Field.Root width="full">
                   <Field.Label>Exposed Port (Internal)</Field.Label>
                   <Field.Input
                     onChange={(event) =>
@@ -234,7 +236,7 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
                     type="number"
                   />
                 </Field.Root>
-                <Field.Root>
+                <Field.Root width="full" disabled={props.mode === "edit"}>
                   <Field.Label>Exposed Port (External)</Field.Label>
                   <Field.Input
                     onChange={(event) =>
@@ -250,15 +252,15 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
                 </Field.Root>
               </HStack>
             </VStack>
-            <VStack gap="4" alignItems="start">
+            <VStack gap="4" alignItems="start" width="full">
               <Heading size="md" display="flex" gap="2">
                 Volumes <HardDrive />
               </Heading>
-              <VStack gap="2">
+              <VStack gap="2" width="full">
                 <For each={props.containerConfiguration.stateful_volume_paths}>
                   {(path, index) => (
-                    <HStack gap="2">
-                      <Field.Root>
+                    <HStack gap="2" width="full">
+                      <Field.Root width="full">
                         <Field.Label>Stateful Path</Field.Label>
                         <Field.Input
                           onChange={(event) =>
@@ -272,7 +274,7 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
                         />
                       </Field.Root>
                       <Button
-                        size="xs"
+                        size="md"
                         bgColor={{ base: "red.7", _hover: "red.8" }}
                         onClick={() =>
                           props.setContainerConfiguration(
@@ -283,6 +285,7 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
                               ),
                           )
                         }
+                        mt="auto"
                       >
                         <Trash2 />
                       </Button>
@@ -297,20 +300,21 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
                       (paths) => paths.concat([""]),
                     )
                   }
+                  alignSelf="start"
                 >
                   Add Stateful Path <Plus />
                 </Button>
               </VStack>
             </VStack>
-            <VStack gap="4" alignItems="start">
+            <VStack gap="4" alignItems="start" width="full">
               <Heading size="md" display="flex" gap="2">
                 Environment Variables <Variable />
               </Heading>
-              <VStack gap="2">
+              <VStack gap="2" width="full">
                 <For each={props.containerConfiguration.environment_variables}>
                   {(variable, index) => (
-                    <HStack gap="2">
-                      <Field.Root>
+                    <HStack gap="2" width="full">
+                      <Field.Root width="full">
                         <Field.Label>Name</Field.Label>
                         <Field.Input
                           onChange={(event) =>
@@ -324,7 +328,7 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
                           value={variable.name}
                         />
                       </Field.Root>
-                      <Field.Root>
+                      <Field.Root width="full">
                         <Field.Label>Value</Field.Label>
                         <Field.Input
                           onChange={(event) =>
@@ -339,7 +343,8 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
                         />
                       </Field.Root>
                       <Button
-                        size="xs"
+                        size="md"
+                        mt="auto"
                         bgColor={{ base: "red.7", _hover: "red.8" }}
                         onClick={() =>
                           props.setContainerConfiguration(
@@ -365,12 +370,13 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
                         variables.concat([{ name: "", value: "" }]),
                     )
                   }
+                  alignSelf="start"
                 >
                   Add Environment Variable <Plus />
                 </Button>
               </VStack>
             </VStack>
-            <VStack gap="4" alignItems="start">
+            <VStack gap="4" alignItems="start" width="full">
               <Heading size="md" display="flex" gap="2">
                 Secrets <Variable />
               </Heading>
@@ -378,11 +384,11 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
                 They are still passed as environment variables to the
                 application
               </Text>
-              <VStack gap="2">
+              <VStack gap="2" width="full">
                 <For each={props.containerConfiguration.secrets}>
                   {(secret, index) => (
-                    <HStack gap="2">
-                      <Field.Root>
+                    <HStack gap="2" width="full">
+                      <Field.Root width="full">
                         <Field.Label>Name</Field.Label>
                         <Field.Input
                           onChange={(event) =>
@@ -396,7 +402,7 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
                           value={secret.name}
                         />
                       </Field.Root>
-                      <Field.Root>
+                      <Field.Root width="full">
                         <Field.Label>Value</Field.Label>
                         <Field.Input
                           onChange={(event) =>
@@ -413,7 +419,8 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
                         />
                       </Field.Root>
                       <Button
-                        size="xs"
+                        size="md"
+                        mt="auto"
                         bgColor={{ base: "red.7", _hover: "red.8" }}
                         onClick={() =>
                           props.setContainerConfiguration(
@@ -437,6 +444,7 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
                       secrets.concat([{ name: "", value: "" }]),
                     )
                   }
+                  alignSelf="start"
                 >
                   Add Secret <Plus />
                 </Button>

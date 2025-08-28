@@ -22,7 +22,26 @@ pub fn create_router(settings: &Settings) -> Router {
         .nest("/admin", admin::create_router(settings))
         .nest("/auth", auth::create_router(settings))
         .nest("/ci", ci::create_router())
+        .route("/{service}", any(forward_to_service_root))
         .route("/{service}/{*path}", any(forward_to_service))
+}
+
+async fn forward_to_service_root(
+    Extension(redis_manager): Extension<RedisManager>,
+    Extension(db_manager): Extension<DbManager>,
+    Extension(local_http_manager): Extension<LocalHttpManager>,
+    Path(service): Path<String>,
+    request: Request,
+) -> Result<Response<Body>, Error> {
+    forward_to_service_shared(
+        redis_manager,
+        db_manager,
+        local_http_manager,
+        service,
+        "/".to_string(),
+        request,
+    )
+    .await
 }
 
 async fn forward_to_service(
@@ -30,6 +49,25 @@ async fn forward_to_service(
     Extension(db_manager): Extension<DbManager>,
     Extension(local_http_manager): Extension<LocalHttpManager>,
     Path((service, path)): Path<(String, String)>,
+    request: Request,
+) -> Result<Response<Body>, Error> {
+    forward_to_service_shared(
+        redis_manager,
+        db_manager,
+        local_http_manager,
+        service,
+        path,
+        request,
+    )
+    .await
+}
+
+async fn forward_to_service_shared(
+    redis_manager: RedisManager,
+    db_manager: DbManager,
+    local_http_manager: LocalHttpManager,
+    service: String,
+    path: String,
     request: Request,
 ) -> Result<Response<Body>, Error> {
     let service_port = redis_manager.get_service_port(&service).await?;

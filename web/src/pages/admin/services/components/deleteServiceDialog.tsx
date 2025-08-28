@@ -20,7 +20,7 @@ export const DeleteServiceDialog: Component<Props> = (props) => {
             loading={props.loading}
           >
             Delete Service
-            <Bomb />
+            <Trash2 />
           </Button>
         </Dialog.Trigger>
         <Dialog.Backdrop />
@@ -45,7 +45,7 @@ export const DeleteServiceDialog: Component<Props> = (props) => {
                     onClick={props.onConfirm}
                   >
                     Confirm
-                    <Trash2 />
+                    <Bomb />
                   </Button>
                 </Dialog.CloseTrigger>
               </HStack>

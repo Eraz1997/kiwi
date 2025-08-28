@@ -14,7 +14,14 @@ export const AdminServices: Component = () => {
 
   const [services] = createResource<Service[]>(async () => {
     const { jsonPayload } = await adminClient.get("/services");
-    return jsonPayload;
+    const services: Service[] = jsonPayload.services;
+    services.forEach((service) => {
+      service.created_at = new Date(service.created_at);
+      service.last_modified_at = new Date(service.last_modified_at);
+      service.last_deployed_at = new Date(service.last_deployed_at);
+    });
+
+    return services;
   });
 
   return (
@@ -25,10 +32,10 @@ export const AdminServices: Component = () => {
           <Table.Head>
             <Table.Row>
               <Table.Header>Name</Table.Header>
-              <Table.Header textAlign="end">Repository</Table.Header>
-              <Table.Header textAlign="end">Created</Table.Header>
-              <Table.Header textAlign="end">Last Modified</Table.Header>
-              <Table.Header textAlign="end">Last Deployed</Table.Header>
+              <Table.Header>Repository</Table.Header>
+              <Table.Header>Created</Table.Header>
+              <Table.Header>Last Modified</Table.Header>
+              <Table.Header>Last Deployed</Table.Header>
               <Table.Header />
             </Table.Row>
           </Table.Head>
@@ -39,7 +46,7 @@ export const AdminServices: Component = () => {
                   <Table.Cell fontWeight="medium">
                     {service.container_configuration.name}
                   </Table.Cell>
-                  <Table.Cell textAlign="end">
+                  <Table.Cell>
                     <Show
                       when={service.container_configuration.github_repository}
                       fallback="-"
@@ -47,13 +54,11 @@ export const AdminServices: Component = () => {
                       {(repo) => `${repo().owner}/${repo().name}`}
                     </Show>
                   </Table.Cell>
-                  <Table.Cell textAlign="end">
-                    {formatDate(service.created_at)}
-                  </Table.Cell>
-                  <Table.Cell textAlign="end">
+                  <Table.Cell>{formatDate(service.created_at)}</Table.Cell>
+                  <Table.Cell>
                     {formatDate(service.last_modified_at)}
                   </Table.Cell>
-                  <Table.Cell textAlign="end">
+                  <Table.Cell>
                     {formatDate(service.last_deployed_at)}
                   </Table.Cell>
                   <Table.Cell width="24" textAlign="end">

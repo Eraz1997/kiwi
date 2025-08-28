@@ -1,4 +1,5 @@
 use chrono::NaiveDateTime;
+use postgres_types::Json;
 use serde::{Deserialize, Serialize};
 use tokio_postgres::Row;
 use uuid::Uuid;
@@ -88,11 +89,12 @@ impl TryFrom<Row> for ServiceData {
                 image_name: value.try_get("image_name")?,
                 image_sha: ImageSha::new(value.try_get("image_sha")?)?,
                 exposed_port,
-                environment_variables: extract_environment_variables(
-                    &value,
-                    "environment_variables",
-                )?,
-                secrets: extract_environment_variables(&value, "secrets")?,
+                environment_variables: value
+                    .try_get::<&str, Json<Vec<EnvironmentVariable>>>("environment_variables")?
+                    .0,
+                secrets: value
+                    .try_get::<&str, Json<Vec<EnvironmentVariable>>>("secrets")?
+                    .0,
                 internal_secrets: vec![
                     EnvironmentVariable {
                         name: "KIWI_POSTGRES_URI".to_string(),
@@ -136,27 +138,4 @@ impl ServiceData {
         };
         self
     }
-}
-
-fn extract_environment_variables(
-    value: &Row,
-    column: &str,
-) -> Result<Vec<EnvironmentVariable>, Error> {
-    let raw_environment_variables = value.try_get::<&str, Vec<Vec<String>>>(column)?;
-    let mut environment_variables: Vec<EnvironmentVariable> = vec![];
-
-    for environment_variable in raw_environment_variables {
-        environment_variables.push(EnvironmentVariable {
-            name: environment_variable
-                .first()
-                .ok_or(Error::serialisation())?
-                .clone(),
-            value: environment_variable
-                .get(1)
-                .ok_or(Error::serialisation())?
-                .clone(),
-        });
-    }
-
-    Ok(environment_variables)
 }

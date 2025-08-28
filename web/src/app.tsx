@@ -1,6 +1,7 @@
 import { useRouter } from "./contexts/router";
 import { AdminIndex } from "./pages/admin/index";
 import { AdminServices } from "./pages/admin/services";
+import { AdminServicesEdit } from "./pages/admin/services/edit";
 import { AdminServicesNew } from "./pages/admin/services/new";
 import { AdminUsers } from "./pages/admin/users";
 import { CreateUser } from "./pages/auth/createUser";
@@ -36,6 +37,9 @@ export const App: Component = () => {
         </Match>
         <Match when={currentPage() === "admin/services/new"}>
           <AdminServicesNew />
+        </Match>
+        <Match when={currentPage() === "admin/services/edit"}>
+          <AdminServicesEdit />
         </Match>
         <Match when={currentPage() === "internal/not-found"}>
           <NotFound />

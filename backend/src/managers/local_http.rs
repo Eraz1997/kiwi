@@ -2,8 +2,10 @@ use std::str::FromStr;
 
 use axum::body::to_bytes;
 use axum::extract::Request;
+use axum::http::uri::{Authority, Parts, PathAndQuery, Scheme};
 use axum::response::Response;
-use reqwest::{Body, Client, Url};
+use hyper::Uri;
+use reqwest::{Body, Client};
 
 use crate::error::Error;
 use crate::settings::Settings;
@@ -42,19 +44,28 @@ impl LocalHttpManager {
         path: String,
         port: i32,
     ) -> Result<Response<Body>, Error> {
-        let url = if path.starts_with("/") {
-            format!("http://localhost:{}{}", port, path)
+        let (mut parts, body) = original_request.into_parts();
+        let sanitised_path = if path.starts_with("/") {
+            path
         } else {
-            format!("http://localhost:{}/{}", port, path)
+            format!("/{}", path)
         };
 
-        let (parts, body) = original_request.into_parts();
+        let mut uri_parts = Parts::default();
+        let authority = format!("localhost:{}", port);
+        uri_parts.scheme = Some(Scheme::HTTP);
+        uri_parts.authority =
+            Some(Authority::from_str(&authority).map_err(|_| Error::serialisation())?);
+        uri_parts.path_and_query =
+            Some(PathAndQuery::from_str(&sanitised_path).map_err(|_| Error::serialisation())?);
+
+        parts.uri = Uri::from_parts(uri_parts).map_err(|_| Error::serialisation())?;
+
         let body_bytes = to_bytes(body, usize::MAX)
             .await
             .map_err(|_| Error::serialisation())?;
 
-        let mut request = reqwest::Request::try_from(Request::from_parts(parts, body_bytes))?;
-        *request.url_mut() = Url::from_str(url.as_str()).map_err(|_| Error::serialisation())?;
+        let request = reqwest::Request::try_from(Request::from_parts(parts, body_bytes))?;
         let response = self.client.execute(request).await?;
         Ok(response.into())
     }

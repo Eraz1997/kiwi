@@ -183,8 +183,13 @@ impl RedisManager {
     }
 
     pub async fn create_user(&self, username: &str, password: &str) -> Result<(), Error> {
-        let rules = format!("ON >{} ~{}:* +@all", password, username);
-        self.client.acl_setuser(username, rules.as_str()).await?;
+        let rules = vec![
+            "ON".to_string(),
+            format!(">{}", password),
+            format!("~{}:*", username),
+            "+@all".to_string(),
+        ];
+        self.client.acl_setuser(username, rules).await?;
         Ok(())
     }
 
@@ -194,16 +199,18 @@ impl RedisManager {
     }
 
     pub async fn get_service_port(&self, service_name: &str) -> Result<RedisServicePort, Error> {
-        let key = RedisServicePort {
+        let item = RedisServicePort {
             service_name: service_name.to_string(),
             port: None,
-        }
-        .to_redis_key();
+        };
+        let key = item.to_redis_key();
 
-        let value: String = self.client.get(key).await?;
+        let value: Option<String> = self.client.get(key).await?;
 
-        let item =
-            RedisServicePort::from_redis_key_suffix_and_value(service_name.to_string(), value)?;
+        let item = RedisServicePort::from_redis_key_suffix_and_value(
+            item.to_redis_key_suffix(),
+            value.unwrap_or_default(),
+        )?;
 
         Ok(item)
     }
