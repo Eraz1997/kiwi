@@ -1,12 +1,16 @@
+use std::sync::Arc;
+
 use crate::error::Error;
 use crate::logger::Logger;
 use crate::managers::crypto::CryptoManager;
+use crate::managers::dynamic_dns::DynamicDnsManager;
 use crate::managers::local_http::LocalHttpManager;
 use crate::managers::oidc::OidcManager;
 use crate::managers::redis::RedisManager;
 use crate::managers::secrets::SecretsManager;
 use crate::server::Server;
 use crate::settings::Settings;
+use crate::worker::Worker;
 use axum::extract::DefaultBodyLimit;
 use axum::{Extension, middleware};
 use clap::Parser;
@@ -15,6 +19,8 @@ use managers::container::models::ContainerConfiguration;
 use managers::db::DbManager;
 use middlewares::authentication::authentication_middleware;
 use routes::create_router;
+use tokio::select;
+use tokio::sync::Mutex;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
@@ -29,6 +35,7 @@ mod routes;
 mod server;
 mod services;
 mod settings;
+mod worker;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -61,6 +68,12 @@ async fn main() -> Result<(), Error> {
     let db_manager = DbManager::new(&db_admin_username, &db_admin_password).await?;
     let redis_manager = RedisManager::new(&redis_admin_password).await?;
     let local_http_manager = LocalHttpManager::new(&settings)?;
+    let dynamic_dns_manager = match secrets_manager.dynamic_dns_api_configuration() {
+        Some(configuration) => Arc::new(Mutex::new(Some(
+            DynamicDnsManager::new(&configuration).await?,
+        ))),
+        None => Arc::new(Mutex::new(None)),
+    };
 
     let services = db_manager.get_services_data().await?;
     for service in services {
@@ -93,9 +106,17 @@ async fn main() -> Result<(), Error> {
         .layer(Extension(crypto_manager))
         .layer(Extension(redis_manager))
         .layer(Extension(local_http_manager))
-        .layer(Extension(oidc_manager));
+        .layer(Extension(oidc_manager))
+        .layer(Extension(dynamic_dns_manager.clone()))
+        .layer(Extension(Arc::new(Mutex::new(secrets_manager))));
 
-    Server::new(&settings).start(&app).await?;
+    let server = Server::new(&settings);
+    let worker = Worker::new(dynamic_dns_manager);
+
+    select! {
+        _ = server.start(&app) => {},
+        _ = worker.start() => {},
+    };
 
     Ok(())
 }

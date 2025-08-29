@@ -22,6 +22,8 @@ impl LocalHttpManager {
         let dev_frontend_base_url =
             format!("http://localhost:{}", settings.dev_frontend_server_port);
 
+        tracing::info!("local http manager initialised");
+
         Ok(Self {
             client,
             dev_frontend_base_url,

@@ -6,6 +6,7 @@ use tokio::io::AsyncReadExt;
 use tokio::io::AsyncWriteExt;
 
 use crate::error::Error;
+use crate::managers::secrets::models::DynamicDnsApiConfiguration;
 use crate::managers::secrets::models::Secrets;
 use crate::settings::Settings;
 
@@ -13,6 +14,7 @@ pub mod models;
 
 pub struct SecretsManager {
     secrets: Secrets,
+    secrets_file_path: String,
 }
 
 impl SecretsManager {
@@ -33,17 +35,14 @@ impl SecretsManager {
             }
         };
 
-        let secrets_file_path_parts: Vec<&str> = secrets_file_path.split("/").collect();
-        let config_folder_path =
-            secrets_file_path_parts[..secrets_file_path_parts.len() - 1].join("/");
-        create_dir_all(config_folder_path).await?;
+        store_secrets(&secrets_file_path, &secrets).await?;
 
-        let mut secrets_file = File::create(&secrets_file_path).await?;
-        let json_string = serde_json::to_string(&secrets)?;
-        secrets_file.write_all(json_string.as_bytes()).await?;
-        secrets_file.flush().await?;
+        tracing::info!("secrets loaded and generated");
 
-        Ok(Self { secrets })
+        Ok(Self {
+            secrets,
+            secrets_file_path,
+        })
     }
 
     pub fn crypto_pepper(&self) -> String {
@@ -61,4 +60,31 @@ impl SecretsManager {
     pub fn redis_admin_password(&self) -> String {
         self.secrets.redis_admin_password.get()
     }
+
+    pub fn dynamic_dns_api_configuration(&self) -> Option<DynamicDnsApiConfiguration> {
+        self.secrets.dynamic_dns_api_configuration.clone()
+    }
+
+    pub async fn set_dynamic_dns_api_configuration(
+        &mut self,
+        configuration: Option<DynamicDnsApiConfiguration>,
+    ) -> Result<(), Error> {
+        self.secrets.dynamic_dns_api_configuration = configuration;
+        store_secrets(&self.secrets_file_path, &self.secrets).await?;
+
+        Ok(())
+    }
+}
+
+async fn store_secrets(secrets_file_path: &String, secrets: &Secrets) -> Result<(), Error> {
+    let secrets_file_path_parts: Vec<&str> = secrets_file_path.split("/").collect();
+    let config_folder_path = secrets_file_path_parts[..secrets_file_path_parts.len() - 1].join("/");
+    create_dir_all(config_folder_path).await?;
+
+    let mut secrets_file = File::create(&secrets_file_path).await?;
+    let json_string = serde_json::to_string(secrets)?;
+    secrets_file.write_all(json_string.as_bytes()).await?;
+    secrets_file.flush().await?;
+
+    Ok(())
 }
