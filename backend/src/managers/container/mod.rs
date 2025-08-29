@@ -4,7 +4,7 @@ use std::net::{Ipv4Addr, SocketAddrV4, TcpListener};
 use crate::error::Error;
 use crate::managers::container::models::Log;
 use bollard::container::LogOutput;
-use bollard::query_parameters::{InspectNetworkOptions, LogsOptionsBuilder};
+use bollard::query_parameters::{InspectNetworkOptions, LogsOptionsBuilder, PruneImagesOptions};
 #[allow(deprecated)]
 use bollard::volume::CreateVolumeOptions;
 #[allow(deprecated)]
@@ -383,5 +383,10 @@ impl ContainerManager {
             .ok_or(Error::container_id_not_found())?;
 
         Ok(container.state)
+    }
+
+    pub async fn prune_unused_images(&self) -> Result<(), Error> {
+        self.client.prune_images(None::<PruneImagesOptions>).await?;
+        Ok(())
     }
 }

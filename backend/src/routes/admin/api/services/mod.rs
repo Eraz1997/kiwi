@@ -133,6 +133,7 @@ async fn delete_service(
     container_manager
         .remove_volumes(&service.container_configuration)
         .await?;
+    container_manager.prune_unused_images().await?;
     redis_manager
         .delete_user(&service.internal_configuration.redis_username)
         .await?;
@@ -185,6 +186,7 @@ async fn edit_service(
     container_manager
         .start_container(&updated_service.container_configuration)
         .await?;
+    container_manager.prune_unused_images().await?;
 
     Ok(())
 }
