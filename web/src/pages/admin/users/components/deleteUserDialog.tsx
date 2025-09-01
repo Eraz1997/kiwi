@@ -24,8 +24,10 @@ export const DeleteUserDialog: Component<Props> = (props) => {
 
   const { call: deleteUser, isLoading } = createAsyncAction(
     async (username: string) => {
-      const { statusCode, jsonPayload: errorMessage } =
-        await adminClient.delete("/users", { username });
+      const { statusCode, text: errorMessage } = await adminClient.delete(
+        "/users",
+        { username },
+      );
 
       if (statusCode === 200) {
         props.createToast({
@@ -36,7 +38,7 @@ export const DeleteUserDialog: Component<Props> = (props) => {
       } else {
         props.createToast({
           title: "Failed",
-          description: `We couldn't delete "${username}": ${errorMessage}.`,
+          description: `We couldn't delete "${username}": ${errorMessage ?? "unknown error"}.`,
           type: "error",
         });
       }

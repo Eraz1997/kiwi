@@ -15,7 +15,7 @@ const iconClass = css({
 
 export const NotFound: Component = () => {
   return (
-    <Container p={{ base: "12" }} maxW="md">
+    <Container p="12" maxW="md">
       <Card.Root>
         <Card.Body>
           <VStack gap="16">

@@ -39,7 +39,7 @@ export const AdminServicesEdit: Component = () => {
   return (
     <>
       <NavigationBar />
-      <Container p={{ base: "12" }} maxW="4xl">
+      <Container p="12" maxW="4xl">
         <HStack gap="10" alignItems="start">
           <Container w="sm">
             <Show

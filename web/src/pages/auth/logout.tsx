@@ -20,7 +20,7 @@ export const Logout: Component = () => {
   });
 
   return (
-    <Container p={{ base: "12" }} maxW="md">
+    <Container p="12" maxW="md">
       <HStack>
         <Spacer />
         <Spinner size="md" />

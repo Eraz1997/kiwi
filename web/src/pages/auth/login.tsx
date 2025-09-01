@@ -60,7 +60,7 @@ export const Login: Component = () => {
   });
 
   return (
-    <Container p={{ base: "12" }} maxW="md">
+    <Container p="12" maxW="md">
       <VStack gap="6">
         <Heading size="6xl">🥝</Heading>
         <Show when={success()}>

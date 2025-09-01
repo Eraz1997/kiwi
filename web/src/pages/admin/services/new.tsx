@@ -26,7 +26,7 @@ export const AdminServicesNew: Component = () => {
   return (
     <>
       <NavigationBar />
-      <Container p={{ base: "12" }} maxW="4xl">
+      <Container p="12" maxW="4xl">
         <ServiceDetailsCard
           containerConfiguration={configuration}
           setContainerConfiguration={setConfiguration}

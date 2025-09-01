@@ -1,4 +1,5 @@
 import { useRouter } from "./contexts/router";
+import { DynamicDns } from "./pages/admin/dynamicDns";
 import { AdminIndex } from "./pages/admin/index";
 import { AdminServices } from "./pages/admin/services";
 import { AdminServicesEdit } from "./pages/admin/services/edit";
@@ -40,6 +41,9 @@ export const App: Component = () => {
         </Match>
         <Match when={currentPage() === "admin/services/edit"}>
           <AdminServicesEdit />
+        </Match>
+        <Match when={currentPage() === "admin/dynamic-dns"}>
+          <DynamicDns />
         </Match>
         <Match when={currentPage() === "internal/not-found"}>
           <NotFound />

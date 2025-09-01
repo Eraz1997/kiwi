@@ -34,6 +34,9 @@ export const NavigationBar: Component = () => {
     if (currentPage() === "admin/services/edit") {
       return "Service Details";
     }
+    if (currentPage() === "admin/dynamic-dns") {
+      return "Dynamic DNS";
+    }
     return "";
   };
   const backPage = (): Page | null => {
@@ -48,6 +51,9 @@ export const NavigationBar: Component = () => {
     }
     if (currentPage() === "admin/services/edit") {
       return "admin/services";
+    }
+    if (currentPage() === "admin/dynamic-dns") {
+      return "admin";
     }
     return null;
   };
@@ -83,10 +89,13 @@ export const NavigationBar: Component = () => {
           >
             <ChevronLeft />
           </Button>
-          <Heading size="4xl">Kiwi 🥝</Heading>
+          <Heading textWrap="nowrap" size={{ base: "4xl", smDown: "2xl" }}>
+            Kiwi 🥝
+          </Heading>
         </HStack>
-        <Spacer />
-        <Heading size="xl">{title()}</Heading>
+        <Heading size="xl" flex="1" textAlign="end">
+          {title()}
+        </Heading>
         <Menu.Root>
           <Menu.Trigger>
             <Avatar cursor="pointer" name={user()?.username ?? ""} />

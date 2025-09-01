@@ -50,6 +50,8 @@ impl DynamicDnsManager {
             .get(test_uri)
             .send()
             .await
+            .map_err(|_| Error::provider_test_failed())?
+            .error_for_status()
             .map_err(|_| Error::provider_test_failed())?;
 
         let public_ip_retriever_client = Client::builder().build()?;

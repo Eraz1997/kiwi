@@ -31,7 +31,7 @@ export const AdminUsers: Component = () => {
   return (
     <>
       <NavigationBar />
-      <Container p={{ base: "12" }} maxW="4xl">
+      <Container p="12" maxW="4xl">
         <Table.Root>
           <Table.Head>
             <Table.Row>

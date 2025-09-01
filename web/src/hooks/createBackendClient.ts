@@ -35,7 +35,7 @@ export const createBackendClient = (service: Service): BackendClient => {
 
     let jsonPayload, text;
     try {
-      jsonPayload = await response.json();
+      jsonPayload = await response.clone().json();
     } catch {
       jsonPayload = null;
     }
