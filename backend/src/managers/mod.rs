@@ -2,6 +2,7 @@ pub mod container;
 pub mod crypto;
 pub mod db;
 pub mod dynamic_dns;
+pub mod lets_encrypt;
 pub mod local_http;
 pub mod oidc;
 pub mod redis;

@@ -1,7 +1,7 @@
 use fred::prelude::{AclInterface, KeysInterface, TransactionInterface};
 
 use crate::error::Error;
-use crate::managers::redis::models::RedisServicePort;
+use crate::managers::redis::models::{RedisLastCertificateOrderUrl, RedisServicePort};
 use crate::managers::redis::{
     RedisManager,
     models::{
@@ -242,6 +242,47 @@ impl RedisManager {
         };
 
         let _: () = self.client.del(item.to_redis_key()).await?;
+
+        Ok(())
+    }
+
+    pub async fn get_last_certificate_order_url(
+        &self,
+    ) -> Result<Option<RedisLastCertificateOrderUrl>, Error> {
+        let item = RedisLastCertificateOrderUrl {
+            order_url: "".to_string(),
+        };
+        let key = item.to_redis_key();
+
+        let value: Option<String> = self.client.get(key).await?;
+
+        if let Some(value) = value {
+            let item = RedisLastCertificateOrderUrl::from_redis_key_suffix_and_value(
+                item.to_redis_key_suffix(),
+                value,
+            )?;
+
+            Ok(Some(item))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub async fn set_last_certificate_order_url(&self, order_url: &str) -> Result<(), Error> {
+        let item = RedisLastCertificateOrderUrl {
+            order_url: order_url.to_string(),
+        };
+
+        let _: () = self
+            .client
+            .set(
+                item.to_redis_key(),
+                item.to_redis_value(),
+                item.get_expiration(),
+                None,
+                false,
+            )
+            .await?;
 
         Ok(())
     }

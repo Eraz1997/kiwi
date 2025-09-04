@@ -1,4 +1,5 @@
 use std::io::ErrorKind;
+use std::str::FromStr;
 
 use tokio::fs::File;
 use tokio::fs::create_dir_all;
@@ -7,6 +8,7 @@ use tokio::io::AsyncWriteExt;
 
 use crate::error::Error;
 use crate::managers::secrets::models::DynamicDnsApiConfiguration;
+use crate::managers::secrets::models::Secret;
 use crate::managers::secrets::models::Secrets;
 use crate::settings::Settings;
 
@@ -70,6 +72,20 @@ impl SecretsManager {
         configuration: Option<DynamicDnsApiConfiguration>,
     ) -> Result<(), Error> {
         self.secrets.dynamic_dns_api_configuration = configuration;
+        store_secrets(&self.secrets_file_path, &self.secrets).await?;
+
+        Ok(())
+    }
+
+    pub fn lets_encrypt_credentials(&self) -> Option<String> {
+        self.secrets
+            .lets_encrypt_credentials
+            .clone()
+            .map(|value| value.get())
+    }
+
+    pub async fn set_lets_encrypt_credentials(&mut self, credentials: String) -> Result<(), Error> {
+        self.secrets.lets_encrypt_credentials = Some(Secret::from_str(&credentials)?);
         store_secrets(&self.secrets_file_path, &self.secrets).await?;
 
         Ok(())

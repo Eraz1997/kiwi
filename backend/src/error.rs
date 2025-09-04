@@ -182,3 +182,21 @@ impl From<regex::Error> for Error {
         }
     }
 }
+
+impl From<instant_acme::Error> for Error {
+    fn from(error: instant_acme::Error) -> Self {
+        Self {
+            code: StatusCode::INTERNAL_SERVER_ERROR,
+            message: error.to_string(),
+        }
+    }
+}
+
+impl From<rcgen::Error> for Error {
+    fn from(error: rcgen::Error) -> Self {
+        Self {
+            code: StatusCode::INTERNAL_SERVER_ERROR,
+            message: error.to_string(),
+        }
+    }
+}

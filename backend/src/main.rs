@@ -4,6 +4,7 @@ use crate::error::Error;
 use crate::logger::Logger;
 use crate::managers::crypto::CryptoManager;
 use crate::managers::dynamic_dns::DynamicDnsManager;
+use crate::managers::lets_encrypt::LetsEncryptManager;
 use crate::managers::local_http::LocalHttpManager;
 use crate::managers::oidc::OidcManager;
 use crate::managers::redis::RedisManager;
@@ -43,7 +44,7 @@ async fn main() -> Result<(), Error> {
 
     Logger::new(&settings).init();
 
-    let secrets_manager = SecretsManager::new_with_loaded_or_created_secrets(&settings).await?;
+    let mut secrets_manager = SecretsManager::new_with_loaded_or_created_secrets(&settings).await?;
     let container_manager = ContainerManager::new().await?;
     let oidc_manager = OidcManager::new().await?;
 
@@ -74,6 +75,13 @@ async fn main() -> Result<(), Error> {
         ))),
         None => Arc::new(Mutex::new(None)),
     };
+    let lets_encrypt_manager = LetsEncryptManager::new(
+        &settings.lets_encrypt_directory_url(),
+        secrets_manager.lets_encrypt_credentials(),
+        settings.tls_private_key_path(),
+        settings.tls_public_certificate_path(),
+    )
+    .await?;
 
     let services = db_manager.get_services_data().await?;
     for service in services {
@@ -84,6 +92,9 @@ async fn main() -> Result<(), Error> {
             .create_and_attach_network_for_container(&service.container_configuration)
             .await?;
     }
+    secrets_manager
+        .set_lets_encrypt_credentials(lets_encrypt_manager.get_credentials())
+        .await?;
 
     let invitation = db_manager
         .get_or_create_admin_invitation_if_no_admin_yet()
@@ -108,7 +119,8 @@ async fn main() -> Result<(), Error> {
         .layer(Extension(local_http_manager))
         .layer(Extension(oidc_manager))
         .layer(Extension(dynamic_dns_manager.clone()))
-        .layer(Extension(Arc::new(Mutex::new(secrets_manager))));
+        .layer(Extension(Arc::new(Mutex::new(secrets_manager))))
+        .layer(Extension(lets_encrypt_manager));
 
     let server = Server::new(&settings);
     let worker = Worker::new(dynamic_dns_manager);

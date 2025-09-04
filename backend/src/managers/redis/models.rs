@@ -204,3 +204,25 @@ impl RedisItem for RedisServicePort {
         Ok(RedisServicePort { service_name, port })
     }
 }
+
+pub struct RedisLastCertificateOrderUrl {
+    pub order_url: String,
+}
+
+impl RedisItem for RedisLastCertificateOrderUrl {
+    fn to_redis_key_suffix(&self) -> String {
+        "last_certificate_order_url".to_string()
+    }
+
+    fn to_redis_value(&self) -> String {
+        self.order_url.clone()
+    }
+
+    fn get_expiration(&self) -> Option<Expiration> {
+        Some(Expiration::EX(Duration::days(1).whole_seconds()))
+    }
+
+    fn from_redis_key_suffix_and_value(_: String, value: String) -> Result<Self, Error> {
+        Ok(RedisLastCertificateOrderUrl { order_url: value })
+    }
+}

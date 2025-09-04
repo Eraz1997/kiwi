@@ -1,13 +1,11 @@
 use crate::{middlewares::subdomain::subdomain_middleware, settings::Settings};
 use axum::Router;
 use axum::ServiceExt;
-use axum_server::bind;
 use axum_server::bind_rustls;
 use axum_server::tls_rustls::RustlsConfig;
 use std::io;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::path::PathBuf;
-use tokio::fs::File;
 use tower::Layer;
 use tower::util::MapRequestLayer;
 
@@ -49,22 +47,14 @@ impl Server {
             self.connection_string
         );
 
-        if File::open(&self.tls_public_certificate_path).await.is_err()
-            || File::open(&self.tls_private_key_path).await.is_err()
-        {
-            bind(socket_address)
-                .serve(app_with_middlewares.into_make_service())
-                .await
-        } else {
-            let tls_config = RustlsConfig::from_pem_file(
-                PathBuf::from(self.tls_public_certificate_path.clone()),
-                PathBuf::from(self.tls_private_key_path.clone()),
-            )
-            .await?;
+        let tls_config = RustlsConfig::from_pem_file(
+            PathBuf::from(self.tls_public_certificate_path.clone()),
+            PathBuf::from(self.tls_private_key_path.clone()),
+        )
+        .await?;
 
-            bind_rustls(socket_address, tls_config)
-                .serve(app_with_middlewares.into_make_service())
-                .await
-        }
+        bind_rustls(socket_address, tls_config)
+            .serve(app_with_middlewares.into_make_service())
+            .await
     }
 }

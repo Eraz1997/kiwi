@@ -7,7 +7,7 @@ import { Heading } from "src/components/ui/heading";
 import { Page, useRouter } from "src/contexts/router";
 import { createBackendClient } from "src/hooks/createBackendClient";
 import { User } from "src/types";
-import { HStack, Spacer } from "styled-system/jsx";
+import { HStack } from "styled-system/jsx";
 
 export const NavigationBar: Component = () => {
   const { currentPage, navigate } = useRouter();
