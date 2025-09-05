@@ -17,10 +17,8 @@ type BackendClient = {
 };
 
 export const createBackendClient = (service: Service): BackendClient => {
-  const { domain, isLocalhost } = useRouter();
-
-  const scheme = () => (isLocalhost() ? "http://" : "https://");
-  const baseUrl = () => `${scheme()}${service}.${domain()}/api`;
+  const { domain } = useRouter();
+  const baseUrl = () => `https://${service}.${domain()}/api`;
 
   const request = async (
     path: string,

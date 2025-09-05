@@ -58,7 +58,9 @@ If you run the frontend only, you can access it at `http://<service>.kiwi-local.
 cargo run
 ```
 
-The backend service is available at `http://<service>.kiwi-local.com:5000/<path>`. Paths starting with `/api` will be forwarded to API handlers, while the others will be forwarded to the frontend server, if any is running.
+The backend service is available at `https://<service>.kiwi-local.com:5000/<path>`. Paths starting with `/api` will be forwarded to API handlers, while the others will be forwarded to the frontend server, if any is running.
+
+Please note that only HTTPS is supported by the backend, and any attempt to access an `http://` URL will give invalid response. Your browser will initially show a warning due to untrusted certificates, as the backend generates dummy ones if it doesn't find some.
 
 ## Lint and Format 🧽
 

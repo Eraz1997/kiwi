@@ -11,11 +11,10 @@ use urlencoding::decode;
 use zxcvbn::{Score, zxcvbn};
 
 use crate::constants::{
-    ACCESS_TOKEN_COOKIE_NAME, LOCALHOST_DOMAIN_WITH_COLON, LOGOUT_REFRESH_TOKEN_COPY_NAME,
-    REFRESH_TOKEN_COOKIE_NAME,
+    ACCESS_TOKEN_COOKIE_NAME, LOGOUT_REFRESH_TOKEN_COPY_NAME, REFRESH_TOKEN_COOKIE_NAME,
 };
 use crate::error::Error;
-use crate::extractors::{Domain, URIScheme};
+use crate::extractors::Domain;
 use crate::managers::crypto::CryptoManager;
 use crate::managers::db::DbManager;
 use crate::managers::redis::RedisManager;
@@ -114,7 +113,6 @@ async fn login(
 async fn logout(
     cookie_jar: CookieJar,
     Domain(domain): Domain,
-    URIScheme(uri_scheme): URIScheme,
     Extension(redis_manager): Extension<RedisManager>,
 ) -> Result<CookieJar, Error> {
     let refresh_token = cookie_jar
@@ -124,8 +122,7 @@ async fn logout(
     match refresh_token {
         Some(refresh_token) => {
             redis_manager.erase_refresh_token(&refresh_token).await?;
-            let (cookie_jar, _) =
-                erase_cookies_and_redirect_to_login(cookie_jar, None, domain, uri_scheme);
+            let (cookie_jar, _) = erase_cookies_and_redirect_to_login(cookie_jar, None, domain);
             Ok(cookie_jar)
         }
         None => Ok(cookie_jar),
@@ -135,7 +132,6 @@ async fn logout(
 async fn refresh_credentials(
     cookie_jar: CookieJar,
     Domain(domain): Domain,
-    URIScheme(uri_scheme): URIScheme,
     Extension(redis_manager): Extension<RedisManager>,
     payload: Query<RefreshCredentialsQuery>,
 ) -> Result<(CookieJar, Redirect), Error> {
@@ -153,7 +149,7 @@ async fn refresh_credentials(
         .map_err(|_| Error::serialisation())?
         .to_string();
     let return_uri_domain = decoded_return_uri
-        .strip_prefix(&uri_scheme)
+        .strip_prefix("https://")
         .and_then(|uri_domain| uri_domain.split("/").next())
         .ok_or(Error::bad_return_uri())?
         .to_string();
@@ -204,7 +200,6 @@ async fn refresh_credentials(
                     cookie_jar,
                     Some(payload.return_uri.clone()),
                     domain,
-                    uri_scheme,
                 ))
             }
         }
@@ -212,7 +207,6 @@ async fn refresh_credentials(
             cookie_jar,
             Some(payload.return_uri.clone()),
             domain,
-            uri_scheme,
         )),
         (_, Err(error)) => Err(error),
     }
@@ -309,12 +303,6 @@ fn set_auth_cookies(
         auth_cookie(LOGOUT_REFRESH_TOKEN_COPY_NAME.to_string(), refresh_token);
     logout_refresh_token_cookie.set_path("/api/logout");
 
-    if domain.starts_with(LOCALHOST_DOMAIN_WITH_COLON) {
-        access_token_cookie.set_secure(false);
-        refresh_token_cookie.set_secure(false);
-        logout_refresh_token_cookie.set_secure(false);
-    }
-
     cookie_jar
         .add(access_token_cookie)
         .add(refresh_token_cookie)
@@ -325,7 +313,6 @@ fn erase_cookies_and_redirect_to_login(
     cookie_jar: CookieJar,
     encoded_return_uri: Option<String>,
     domain: String,
-    uri_scheme: String,
 ) -> (CookieJar, Redirect) {
     let domain_parts: Vec<String> = domain.split(":").map(|value| value.to_string()).collect();
     let domain_without_port = format!(".{}", domain_parts[0]);
@@ -345,18 +332,12 @@ fn erase_cookies_and_redirect_to_login(
     logout_refresh_token_cookie.set_path("/api/logout");
     logout_refresh_token_cookie.set_max_age(Duration::ZERO);
 
-    if domain.starts_with(LOCALHOST_DOMAIN_WITH_COLON) {
-        access_token_cookie.set_secure(false);
-        refresh_token_cookie.set_secure(false);
-        logout_refresh_token_cookie.set_secure(false);
-    }
-
     let cookie_jar = cookie_jar
         .add(access_token_cookie)
         .add(refresh_token_cookie)
         .add(logout_refresh_token_cookie);
 
-    let redirect_uri_prefix = format!("{}auth.{}", uri_scheme, domain);
+    let redirect_uri_prefix = format!("https://auth.{}", domain);
 
     let redirect_uri = if let Some(encoded_return_uri) = encoded_return_uri {
         format!(

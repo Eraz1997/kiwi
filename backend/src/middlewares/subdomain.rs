@@ -4,8 +4,6 @@ use axum::{
 };
 use hyper::body::Incoming;
 
-use crate::constants::LOCALHOST_DOMAIN_WITH_COLON;
-
 pub fn subdomain_middleware(mut request: Request<Incoming>) -> Request<Incoming> {
     let subdomain = request
         .uri()
@@ -24,9 +22,7 @@ pub fn subdomain_middleware(mut request: Request<Incoming>) -> Request<Incoming>
         .and_then(|host| {
             let host_value = host.to_string();
             let domains: Vec<&str> = host_value.split(".").collect();
-            if domains.len() == 3
-                || (domains.len() == 2 && domains[1].starts_with(LOCALHOST_DOMAIN_WITH_COLON))
-            {
+            if domains.len() == 3 {
                 Some(domains[0].to_string())
             } else {
                 None

@@ -32,7 +32,7 @@ type Props = {
 export const InviteUserDialog: Component<Props> = (props) => {
   const adminClient = createBackendClient("admin");
 
-  const { domain, isLocalhost } = useRouter();
+  const { domain } = useRouter();
 
   const rolesCollection = createListCollection<Role>({
     items: [Role.Admin, Role.Customer],
@@ -40,8 +40,7 @@ export const InviteUserDialog: Component<Props> = (props) => {
   const [selectedRole, setSelectedRole] = createSignal<Role>();
   const [invitationId, setInvitationId] = createSignal<string>();
   const invitationUrl = () => {
-    const scheme = isLocalhost() ? "http://" : "https://";
-    return `${scheme}auth.${domain()}/create-user?invitation_id=${invitationId()}`;
+    return `https://auth.${domain()}/create-user?invitation_id=${invitationId()}`;
   };
 
   const resetState = () => {

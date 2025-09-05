@@ -31,7 +31,6 @@ type Router = {
   currentPage: Accessor<Page>;
   domain: Accessor<string>;
   queryParams: Accessor<QueryParams>;
-  isLocalhost: Accessor<boolean>;
   navigate: (page: Page, queryParams?: QueryParams) => void;
   isValidReturnUri: (returnUri: string) => boolean;
 };
@@ -48,19 +47,16 @@ export const RouterProvider: Component<Props> = (props) => {
   const initialPage = getPageFromLocation(window.location);
   const initialQueryParams = getQueryParamsFromLocation(window.location);
   const initialDomain = getDomainFromLocation(window.location);
-  const initialLocalhost = isLocalhostFromLocation(window.location);
 
   const [domain, setDomain] = createSignal(initialDomain);
   const [currentPage, setCurrentPage] = createSignal<Page>(initialPage);
   const [queryParams, setQueryParams] =
     createSignal<QueryParams>(initialQueryParams);
-  const [isLocalhost, setIsLocalHost] = createSignal(initialLocalhost);
 
   const urlChangeEventListener = () => {
     setCurrentPage(getPageFromLocation(window.location));
     setQueryParams(getQueryParamsFromLocation(window.location));
     setDomain(getDomainFromLocation(window.location));
-    setIsLocalHost(isLocalhostFromLocation(window.location));
   };
 
   onMount(() => {
@@ -75,11 +71,10 @@ export const RouterProvider: Component<Props> = (props) => {
     const pageParts = page.split("/");
     const service = pageParts[0];
     const path = pageParts.length > 1 ? pageParts.slice(1).join("/") : "";
-    const scheme = isLocalhost() ? "http://" : "https://";
     const encodedQueryParams = queryParams
       ? `?${encodeQueryParams(queryParams)}`
       : "";
-    const url = `${scheme}${service}.${domain()}/${path}${encodedQueryParams}`;
+    const url = `https://${service}.${domain()}/${path}${encodedQueryParams}`;
     const currentService = currentPage().split("/")[0];
 
     if (currentService !== service) {
@@ -94,12 +89,11 @@ export const RouterProvider: Component<Props> = (props) => {
   };
 
   const isValidReturnUri = (returnUri: string) => {
-    const scheme = isLocalhost() ? "http://" : "https://";
-    if (!returnUri.startsWith(scheme)) {
+    if (!returnUri.startsWith("https://")) {
       return false;
     }
 
-    const uriParts = returnUri.substring(scheme.length).split("/");
+    const uriParts = returnUri.substring("https://".length).split("/");
     if (!uriParts.length) {
       return false;
     }
@@ -120,7 +114,6 @@ export const RouterProvider: Component<Props> = (props) => {
         currentPage,
         domain,
         queryParams,
-        isLocalhost,
         navigate,
         isValidReturnUri,
       }}
@@ -215,9 +208,4 @@ const encodeQueryParams = (queryParams: QueryParams): string => {
         `${encodeURIComponent(key)}=${encodeURIComponent(value)}`,
     )
     .join("&");
-};
-
-const isLocalhostFromLocation = (location: Location): boolean => {
-  const domain = getDomainFromLocation(location);
-  return domain.startsWith("kiwi-local.com:");
 };

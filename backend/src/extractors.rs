@@ -3,8 +3,6 @@ use axum::{
     http::{StatusCode, header::HOST, request::Parts},
 };
 
-use crate::constants::LOCALHOST_DOMAIN_WITH_COLON;
-
 pub struct Domain(pub String);
 
 impl<State> FromRequestParts<State> for Domain
@@ -25,25 +23,6 @@ where
     }
 }
 
-pub struct URIScheme(pub String);
-
-impl<State> FromRequestParts<State> for URIScheme
-where
-    State: Send + Sync,
-{
-    type Rejection = (StatusCode, String);
-
-    async fn from_request_parts(parts: &mut Parts, state: &State) -> Result<Self, Self::Rejection> {
-        let Domain(domain) = Domain::from_request_parts(parts, state).await?;
-        let scheme = if domain.starts_with(LOCALHOST_DOMAIN_WITH_COLON) {
-            "http://".to_string()
-        } else {
-            "https://".to_string()
-        };
-        Ok(URIScheme(scheme))
-    }
-}
-
 pub struct FullOriginalUri(pub String);
 
 impl<State> FromRequestParts<State> for FullOriginalUri
@@ -53,7 +32,7 @@ where
     type Rejection = (StatusCode, String);
 
     async fn from_request_parts(parts: &mut Parts, state: &State) -> Result<Self, Self::Rejection> {
-        let URIScheme(scheme) = URIScheme::from_request_parts(parts, state).await?;
+        let scheme = parts.uri.scheme_str().unwrap_or("https").to_string();
         let Domain(domain) = Domain::from_request_parts(parts, state).await?;
         let domain_with_leading_dot = format!(".{}", domain);
         let host =
@@ -73,7 +52,7 @@ where
             .map(|path_and_query| path_and_query.to_string())
             .unwrap_or(path_and_query);
 
-        let full_uri = format!("{}{}{}", scheme, host, sanitised_path_and_query);
+        let full_uri = format!("{}://{}{}", scheme, host, sanitised_path_and_query);
 
         Ok(FullOriginalUri(full_uri))
     }
