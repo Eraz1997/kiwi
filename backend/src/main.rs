@@ -9,6 +9,7 @@ use crate::managers::local_http::LocalHttpManager;
 use crate::managers::oidc::OidcManager;
 use crate::managers::redis::RedisManager;
 use crate::managers::secrets::SecretsManager;
+use crate::models::ServerAction;
 use crate::server::Server;
 use crate::settings::Settings;
 use crate::worker::Worker;
@@ -75,13 +76,15 @@ async fn main() -> Result<(), Error> {
         ))),
         None => Arc::new(Mutex::new(None)),
     };
-    let lets_encrypt_manager = LetsEncryptManager::new(
-        &settings.lets_encrypt_directory_url(),
-        secrets_manager.lets_encrypt_credentials(),
-        settings.tls_private_key_path(),
-        settings.tls_public_certificate_path(),
-    )
-    .await?;
+    let lets_encrypt_manager = Arc::new(Mutex::new(
+        LetsEncryptManager::new(
+            &settings.lets_encrypt_directory_url(),
+            secrets_manager.lets_encrypt_credentials(),
+            settings.tls_private_key_path(),
+            settings.tls_public_certificate_path(),
+        )
+        .await?,
+    ));
 
     let services = db_manager.get_services_data().await?;
     for service in services {
@@ -93,7 +96,7 @@ async fn main() -> Result<(), Error> {
             .await?;
     }
     secrets_manager
-        .set_lets_encrypt_credentials(lets_encrypt_manager.get_credentials())
+        .set_lets_encrypt_credentials(lets_encrypt_manager.lock().await.get_credentials())
         .await?;
 
     let invitation = db_manager
@@ -120,15 +123,22 @@ async fn main() -> Result<(), Error> {
         .layer(Extension(oidc_manager))
         .layer(Extension(dynamic_dns_manager.clone()))
         .layer(Extension(Arc::new(Mutex::new(secrets_manager))))
-        .layer(Extension(lets_encrypt_manager));
+        .layer(Extension(lets_encrypt_manager.clone()));
 
     let server = Server::new(&settings);
-    let worker = Worker::new(dynamic_dns_manager);
+    let worker = Worker::new(dynamic_dns_manager, lets_encrypt_manager);
 
-    select! {
-        _ = server.start(&app) => {},
-        _ = worker.start() => {},
-    };
+    loop {
+        let server_action = select! {
+            _ = server.start(&app) => ServerAction::CloseDueToUnexpectedError,
+            server_action = worker.start() => server_action,
+        };
 
-    Ok(())
+        match server_action {
+            ServerAction::RestartWithoutDependenciesInit => {}
+            ServerAction::CloseDueToUnexpectedError => {
+                return Err(Error::unexpected_close());
+            }
+        }
+    }
 }

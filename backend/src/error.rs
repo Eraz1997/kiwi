@@ -44,6 +44,13 @@ impl Error {
             message: "something went wrong with your credentials".to_string(),
         }
     }
+
+    pub fn unexpected_close() -> Self {
+        Self {
+            code: StatusCode::INTERNAL_SERVER_ERROR,
+            message: "something went wrong with the server jobs".to_string(),
+        }
+    }
 }
 
 impl Display for Error {
@@ -194,6 +201,33 @@ impl From<instant_acme::Error> for Error {
 
 impl From<rcgen::Error> for Error {
     fn from(error: rcgen::Error) -> Self {
+        Self {
+            code: StatusCode::INTERNAL_SERVER_ERROR,
+            message: error.to_string(),
+        }
+    }
+}
+
+impl From<x509_parser::error::PEMError> for Error {
+    fn from(error: x509_parser::error::PEMError) -> Self {
+        Self {
+            code: StatusCode::INTERNAL_SERVER_ERROR,
+            message: error.to_string(),
+        }
+    }
+}
+
+impl From<x509_parser::error::X509Error> for Error {
+    fn from(error: x509_parser::error::X509Error) -> Self {
+        Self {
+            code: StatusCode::INTERNAL_SERVER_ERROR,
+            message: error.to_string(),
+        }
+    }
+}
+
+impl From<x509_parser::asn1_rs::Err<x509_parser::error::X509Error>> for Error {
+    fn from(error: x509_parser::asn1_rs::Err<x509_parser::error::X509Error>) -> Self {
         Self {
             code: StatusCode::INTERNAL_SERVER_ERROR,
             message: error.to_string(),

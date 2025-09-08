@@ -1,5 +1,9 @@
 use serde::{Deserialize, Serialize};
 
+use crate::managers::lets_encrypt::models::CertificateInfo;
+
+pub type GetCertificateInfoResponse = CertificateInfo;
+
 #[derive(Serialize, Deserialize)]
 pub struct OrderCertificateRequest {
     pub domain: String,

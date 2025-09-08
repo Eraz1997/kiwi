@@ -41,3 +41,8 @@ impl std::fmt::Display for UserRole {
         }
     }
 }
+
+pub enum ServerAction {
+    RestartWithoutDependenciesInit,
+    CloseDueToUnexpectedError,
+}

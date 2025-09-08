@@ -1,13 +1,25 @@
+use std::time::SystemTime;
+
+use chrono::DateTime;
 use instant_acme::{
     Account, AccountCredentials, AuthorizationStatus, ChallengeType, Identifier, NewAccount,
     NewOrder, OrderStatus, RetryPolicy,
 };
 use rcgen::generate_simple_self_signed;
-use tokio::{fs::File, io::AsyncWriteExt};
+use tokio::{
+    fs::File,
+    io::{AsyncReadExt, AsyncWriteExt},
+};
+use x509_parser::{
+    pem::Pem,
+    prelude::{FromDer, X509Certificate},
+};
 
 use crate::{
     error::Error,
-    managers::lets_encrypt::models::{CertificateVerificationStatus, NewCertificateOrder},
+    managers::lets_encrypt::models::{
+        CertificateInfo, CertificateVerificationStatus, NewCertificateOrder,
+    },
 };
 
 mod error;
@@ -19,6 +31,7 @@ pub struct LetsEncryptManager {
     serialised_credentials: String,
     tls_private_key_path: String,
     tls_public_certificate_path: String,
+    tls_private_key_last_modified_date: SystemTime,
 }
 
 impl LetsEncryptManager {
@@ -78,11 +91,18 @@ impl LetsEncryptManager {
             tracing::warn!("tls certificate not found, dummy certificate generated");
         }
 
+        let tls_private_key_last_modified_date = File::open(&tls_private_key_path)
+            .await?
+            .metadata()
+            .await?
+            .modified()?;
+
         Ok(LetsEncryptManager {
             account,
             serialised_credentials,
             tls_private_key_path,
             tls_public_certificate_path,
+            tls_private_key_last_modified_date,
         })
     }
 
@@ -165,5 +185,39 @@ impl LetsEncryptManager {
         };
 
         Ok(certificate_status)
+    }
+
+    pub async fn was_certificate_updated(&mut self) -> Result<bool, Error> {
+        let tls_private_key_last_modified_date = File::open(&self.tls_private_key_path)
+            .await?
+            .metadata()
+            .await?
+            .modified()?;
+        let was_updated =
+            tls_private_key_last_modified_date > self.tls_private_key_last_modified_date;
+
+        self.tls_private_key_last_modified_date = tls_private_key_last_modified_date;
+
+        Ok(was_updated)
+    }
+
+    pub async fn get_certificate_info(&self) -> Result<CertificateInfo, Error> {
+        let mut file = File::open(&self.tls_public_certificate_path).await?;
+        let mut certificate_bytes = vec![];
+        file.read_to_end(&mut certificate_bytes).await?;
+
+        let (pem, _) = Pem::read(std::io::Cursor::new(&certificate_bytes))?;
+        let (_, certificate_info) = X509Certificate::from_der(&pem.contents)?;
+
+        let issuer = certificate_info.issuer().to_string();
+        let expiration_date =
+            DateTime::from_timestamp(certificate_info.validity().not_after.timestamp(), 0)
+                .ok_or(Error::serialisation())?
+                .naive_utc();
+
+        Ok(CertificateInfo {
+            issuer,
+            expiration_date,
+        })
     }
 }
