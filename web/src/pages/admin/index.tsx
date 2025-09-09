@@ -1,4 +1,10 @@
-import { ArrowRight, Fish, LibraryBig, ServerCog } from "lucide-solid";
+import {
+  ArrowRight,
+  Fingerprint,
+  Fish,
+  LibraryBig,
+  ServerCog,
+} from "lucide-solid";
 import { Component } from "solid-js";
 import { NavigationBar } from "src/components/navigationBar";
 import { Button } from "src/components/ui/button";
@@ -64,6 +70,22 @@ export const AdminIndex: Component = () => {
             </Card.Body>
             <Card.Footer>
               <Button onClick={() => navigate("admin/dynamic-dns")}>
+                <ArrowRight />
+              </Button>
+            </Card.Footer>
+          </Card.Root>
+          <Card.Root width="2xs">
+            <Card.Header>
+              <Card.Title>TLS</Card.Title>
+              <Card.Description>Manage TLS certificates.</Card.Description>
+            </Card.Header>
+            <Card.Body>
+              <Container>
+                <Fingerprint size={64} />
+              </Container>
+            </Card.Body>
+            <Card.Footer>
+              <Button onClick={() => navigate("admin/certificates")}>
                 <ArrowRight />
               </Button>
             </Card.Footer>

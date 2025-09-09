@@ -18,6 +18,8 @@ You will access your local server through a test domain, `kiwi-local.com`. To ma
 127.0.0.1       kiwi-local.com                  # main domain
 127.0.0.1       auth.kiwi-local.com             # auth service
 127.0.0.1       admin.kiwi-local.com            # admin service
+127.0.0.1       ci.kiwi-local.com               # ci service
+127.0.0.1       status.kiwi-local.com           # status service
 127.0.0.1       test-service-1.kiwi-local.com   # test service
 ```
 

@@ -286,4 +286,14 @@ impl RedisManager {
 
         Ok(())
     }
+
+    pub async fn remove_last_certificate_order_url(&self) -> Result<(), Error> {
+        let item = RedisLastCertificateOrderUrl {
+            order_url: "".to_string(),
+        };
+
+        let _: () = self.client.del(item.to_redis_key()).await?;
+
+        Ok(())
+    }
 }

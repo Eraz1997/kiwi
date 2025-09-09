@@ -1,8 +1,12 @@
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
-use crate::managers::lets_encrypt::models::CertificateInfo;
-
-pub type GetCertificateInfoResponse = CertificateInfo;
+#[derive(Serialize, Deserialize)]
+pub struct GetCertificateInfoResponse {
+    pub issuer: String,
+    pub expiration_date: NaiveDateTime,
+    pub new_pending_order: bool,
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct OrderCertificateRequest {

@@ -37,6 +37,9 @@ export const NavigationBar: Component = () => {
     if (currentPage() === "admin/dynamic-dns") {
       return "Dynamic DNS";
     }
+    if (currentPage() === "admin/certificates") {
+      return "TLS";
+    }
     return "";
   };
   const backPage = (): Page | null => {
@@ -53,6 +56,9 @@ export const NavigationBar: Component = () => {
       return "admin/services";
     }
     if (currentPage() === "admin/dynamic-dns") {
+      return "admin";
+    }
+    if (currentPage() === "admin/certificates") {
       return "admin";
     }
     return null;

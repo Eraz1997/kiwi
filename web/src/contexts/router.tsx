@@ -21,7 +21,8 @@ export type Page =
   | "admin/services"
   | "admin/services/new"
   | "admin/services/edit"
-  | "admin/dynamic-dns";
+  | "admin/dynamic-dns"
+  | "admin/certificates";
 
 type QueryParams = {
   [index: string]: string;
@@ -181,6 +182,9 @@ const getPageFromLocation = (location: Location): Page => {
   }
   if (subdomain === "admin" && path === "/dynamic-dns") {
     return "admin/dynamic-dns";
+  }
+  if (subdomain === "admin" && path === "/certificates") {
+    return "admin/certificates";
   }
   return "internal/not-found";
 };
