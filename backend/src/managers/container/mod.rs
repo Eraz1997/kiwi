@@ -48,6 +48,16 @@ impl ContainerManager {
             tracing::info!("no running containers found, skipping reset");
         } else {
             for container in running_containers.iter() {
+                let is_self = container
+                    .names
+                    .clone()
+                    .unwrap_or_default()
+                    .iter()
+                    .any(|name| name == "kiwi" || name == "/kiwi");
+                if is_self {
+                    continue;
+                }
+
                 let container_id = container
                     .id
                     .clone()

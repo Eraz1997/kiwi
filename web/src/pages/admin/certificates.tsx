@@ -41,7 +41,7 @@ export const Certificates: Component = () => {
     createAsyncAction(async () => {
       const { statusCode, text: errorMessage } = await adminClient.post(
         "/certificates",
-        { domain: { value: domain() } },
+        { domain: domain() },
       );
 
       if (statusCode === 200) {
