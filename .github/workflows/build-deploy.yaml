@@ -102,7 +102,11 @@ jobs:
       - name: Generate Changelog
         run: |
           latest_version_commit=$(git rev-parse "$(gh release view --json tagName -q .tagName)")
-          git log $latest_version_commit..${{ github.sha }} --pretty=format:"%s" >> /tmp/changelog.txt
+          if [[ "$latest_version_commit" == "" ]]; then
+            git log --pretty=format:"%s" > /tmp/changelog.txt
+          else
+            git log $latest_version_commit..${{ github.sha }} --pretty=format:"%s" > /tmp/changelog.txt
+          fi
 
       - name: Publish
         uses: softprops/action-gh-release@6cbd405e2c4e67a21c47fa9e383d020e4e28b836 # 2.3.3
