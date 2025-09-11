@@ -47,7 +47,8 @@ async fn deploy_service(
     }
 
     let mut new_container_configuration = service_data.container_configuration.clone();
-    new_container_configuration.image_sha = ImageSha::new(payload.image_sha)?;
+    let image_sha = payload.image_sha.trim_start_matches("sha246").to_string();
+    new_container_configuration.image_sha = ImageSha::new(image_sha)?;
 
     db_manager
         .update_service(&service_data, &new_container_configuration)

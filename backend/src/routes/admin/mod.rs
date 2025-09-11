@@ -19,7 +19,10 @@ pub fn create_router(settings: &Settings) -> Router {
             .route("/", get(forward_to_development_frontend_server_root))
             .route("/{*path}", get(forward_to_development_frontend_server))
     } else {
-        router.nest_service("/", ServeStaticWebApp::new(&settings.static_files_path))
+        let static_service = ServeStaticWebApp::new(&settings.static_files_path);
+        router
+            .route_service("/", static_service.clone())
+            .route_service("/{*path}", static_service)
     }
 }
 

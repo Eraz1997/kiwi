@@ -2,6 +2,8 @@ use fred::{
     prelude::{Client, ClientLike, Config, EventInterface, TcpConfig},
     types::Builder,
 };
+use std::time::Duration;
+use tokio::time::sleep;
 
 use crate::error::Error;
 use crate::managers::redis::constants::{CONNECTION_TIMEOUT, DSN};
@@ -30,7 +32,20 @@ impl RedisManager {
             })
             .build()?;
 
-        client.init().await?;
+        for tentative_count in 1..=5 {
+            tracing::info!("connecting to Redis, attempt {}/5", tentative_count);
+            let connection_test_result = client.init().await;
+
+            match connection_test_result {
+                Ok(_) => break,
+                Err(_) if tentative_count < 5 => {
+                    sleep(Duration::from_secs(2 * tentative_count)).await;
+                }
+                Err(error) => {
+                    return Err(error.into());
+                }
+            }
+        }
 
         client.on_error(|(error, server)| async move {
             tracing::error!("{:?}: Connection error: {:?}", server, error);

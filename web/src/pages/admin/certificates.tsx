@@ -3,7 +3,6 @@ import {
   CalendarClock,
   CircleX,
   Signature,
-  Sticker,
   Telescope,
 } from "lucide-solid";
 import { Component, Show, createResource, createSignal } from "solid-js";
@@ -41,7 +40,7 @@ export const Certificates: Component = () => {
     createAsyncAction(async () => {
       const { statusCode, text: errorMessage } = await adminClient.post(
         "/certificates",
-        { domain: { value: domain() } },
+        { domain: domain() },
       );
 
       if (statusCode === 200) {
@@ -105,9 +104,7 @@ export const Certificates: Component = () => {
                   <Heading size="md" display="flex" gap="2">
                     Expiration <CalendarClock />
                   </Heading>
-                  <Text>
-                    {certificateInfo()?.expiration_date}
-                  </Text>
+                  <Text>{certificateInfo()?.expiration_date}</Text>
                 </VStack>
               </Card.Body>
               <Card.Footer>

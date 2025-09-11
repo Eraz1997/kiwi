@@ -62,7 +62,7 @@ pub async fn authentication_middleware(
             } else if let Ok(user_id_header_value) = HeaderValue::from_str(&user_id_string) {
                 request
                     .headers_mut()
-                    .append(KIWI_USER_ID_HEADER_NAME, user_id_header_value); //do
+                    .append(KIWI_USER_ID_HEADER_NAME, user_id_header_value);
                 next.run(request).await
             } else {
                 Error::serialisation().into_response()

@@ -10,6 +10,10 @@ inputs:
     description: the name of the service to deploy
     type: string
     required: true
+  image-sha:
+    description: the SHA256 sum of your Docker image
+    type: string
+    required: true
 
 runs:
   using: composite
@@ -23,5 +27,5 @@ runs:
       run: |
         curl -X POST https://ci.${{ inputs.kiwi-domain }}/deploy/${{ inputs.service-name }} \
           -H "Content-Type: application/json" \
-          -d '{"oidc_token": "${{ secrets.GITHUB_TOKEN }}", "image_sha": "${{ github.sha }}"}' \
+          -d '{"oidc_token": "${{ secrets.GITHUB_TOKEN }}", "image_sha": "${{ inputs.image-sha }}"}' \
           --fail-with-body

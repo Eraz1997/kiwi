@@ -5,7 +5,7 @@ use axum::extract::Request;
 use axum::http::uri::{Authority, Parts, PathAndQuery, Scheme};
 use axum::response::Response;
 use hyper::Uri;
-use reqwest::{Body, Client};
+use reqwest::{Body, Client, Version};
 
 use crate::error::Error;
 use crate::settings::Settings;
@@ -67,7 +67,8 @@ impl LocalHttpManager {
             .await
             .map_err(|_| Error::serialisation())?;
 
-        let request = reqwest::Request::try_from(Request::from_parts(parts, body_bytes))?;
+        let mut request = reqwest::Request::try_from(Request::from_parts(parts, body_bytes))?;
+        *request.version_mut() = Version::HTTP_11;
         let response = self.client.execute(request).await?;
         Ok(response.into())
     }

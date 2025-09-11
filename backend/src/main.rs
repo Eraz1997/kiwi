@@ -104,7 +104,7 @@ async fn main() -> Result<(), Error> {
         .await?;
     if let Some(invitation) = invitation {
         tracing::warn!(
-            "admin user not found. invitation created with ID: {}. please visit auth.<your-domain>/create-user?invitation_id={}",
+            "admin user not found. invitation created with ID: {}. please visit https://auth.<your-domain>/create-user?invitation_id={}",
             invitation.id,
             invitation.id
         );
