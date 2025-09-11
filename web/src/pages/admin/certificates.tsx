@@ -3,7 +3,6 @@ import {
   CalendarClock,
   CircleX,
   Signature,
-  Sticker,
   Telescope,
 } from "lucide-solid";
 import { Component, Show, createResource, createSignal } from "solid-js";
@@ -105,9 +104,7 @@ export const Certificates: Component = () => {
                   <Heading size="md" display="flex" gap="2">
                     Expiration <CalendarClock />
                   </Heading>
-                  <Text>
-                    {certificateInfo()?.expiration_date}
-                  </Text>
+                  <Text>{certificateInfo()?.expiration_date}</Text>
                 </VStack>
               </Card.Body>
               <Card.Footer>
