@@ -1,13 +1,18 @@
-name: Test
+name: Build and Deploy
 
 on:
   push:
     tags:
       - "[0-9]+.[0-9]+.[0-9]+"
 
+permissions:
+  contents: write
+  id-token: write
+  packages: write
+
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     name: Test
     
     steps:
@@ -15,10 +20,10 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       
       - name: Run Tests
-        uses: ./.github/workflows/composite/test.yaml
+        uses: ./.github/workflows/composite/test
   
   check-version:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     name: Check Version
 
     steps:
@@ -26,6 +31,8 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Check Greater Than latest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           latest_version=$(gh release view --json tagName -q .tagName || echo "0.0.0")
           newest_version=$(printf "%s\n%s" "$latest_version" "${{ github.ref_name }}" | sort -V | tail -n1)
@@ -58,9 +65,9 @@ jobs:
             exit 1
           fi
 
-  build-and-push:
+  build-and-push-amd64:
     runs-on: ubuntu-latest
-    name: Build and Push
+    name: Build and Push for amd64
     needs:
       - test
       - check-version
@@ -68,43 +75,50 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@05340d1c670183e7caabdb33ae9f1c80fae3b0c2 # v3.6.0
+      
+      - name: Build and Push
+        uses: ./.github/workflows/composite/build-and-push
         with:
-          platforms: arm64
-          image: docker.io/tonistiigi/binfmt@sha256:1b804311fe87047a4c96d38b4b3ef6f62fca8cd125265917a9e3dc3c996c39e6 # qemu-v9.2.2
+          platform: amd64
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@1583c0f09d26c58c59d25b0eef29792b7ce99d9a # v3.11.1
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
-        with:
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: ghcr.io/Eraz1997/kiwi:${{ github.ref_name }}
-
-  publish:
-    runs-on: ubuntu-latest
-    name: Publish
+  build-and-push-arm64:
+    runs-on: ubuntu-24.04-arm
+    name: Build and Push for arm64
     needs:
-      - build-and-push
+      - test
+      - check-version
 
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      
+      - name: Build and Push
+        uses: ./.github/workflows/composite/build-and-push
+        with:
+          platform: arm64
+
+  publish:
+    runs-on: ubuntu-24.04-arm
+    name: Publish
+    needs:
+      - build-and-push-amd64
+      - build-and-push-arm64
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
       - name: Generate Changelog
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          latest_version_commit=$(git rev-parse "$(gh release view --json tagName -q .tagName)")
-          if [[ "$latest_version_commit" == "" ]]; then
+          latest_version=$(gh release view --json tagName -q .tagName || echo "")
+          if [[ "$latest_version" == "" ]]; then
             git log --pretty=format:"%s" > /tmp/changelog.txt
           else
+            latest_version_commit=$(git rev-parse "$latest_version")
             git log $latest_version_commit..${{ github.sha }} --pretty=format:"%s" > /tmp/changelog.txt
           fi
 

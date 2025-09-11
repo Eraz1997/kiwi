@@ -68,6 +68,11 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  id-token: write
+  packages: write
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
