@@ -45,3 +45,52 @@ For each service, Kiwi creates **a PostgreSQL database with credentials** and **
 - `KIWI_POSTGRES_URI`, with the URI of the database your service can access, already including username and password
 - `KIWI_REDIS_URI`, with the URI of the Redis instance your service can access, already including username and password
 - `KIWI_REDIS_PREFIX`, with the prefix of the Redis keys your service can access inside the instance
+
+### CI and Deployment 🧑‍🚀
+
+> [!NOTE]
+> Kiwi only supports Github as VCS Server and Github Actions as CI provider for deployments at the moment.
+
+To deploy a new version of your service, you can head to the proper section of the admin dashboard and update the Docker image SHA value. A handier way to achieve the same is to link your Github Repository.
+
+In the service section of the admin dashboard, specify owner and repository name and save changes. Your Github Actions are now granted permissions to deploy new changes.
+
+> [!IMPORTANT]
+> Only the `main` branch is authorised to deploy new service versions.
+
+You can use the Github Action in this repository to deploy your changes:
+
+```yaml
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    name: Build And Deploy
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@<commit-sha>
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@<commit-sha>
+
+      - name: Build and push
+        id: build-and-push
+        uses: docker/build-push-action@<commit-sha>
+        with:
+          push: true
+          tags: <your-tag>
+      
+      - name: Deploy
+        uses: Eraz1997/kiwi/ci@<commit-sha>
+        with:
+            kiwi-domain: <your-domain>
+            service-name: <service-to-deploy>
+            image-sha: ${{ steps.build-and-push.outputs.digest }}
+```
