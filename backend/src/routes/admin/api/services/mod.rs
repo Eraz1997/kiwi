@@ -85,7 +85,7 @@ async fn create_service(
         return Err(Error::invalid_name());
     }
 
-    let postgres_username = Secret::generate(32).get();
+    let postgres_username = Secret::default().get();
     let postgres_password = Secret::default().get();
     let redis_username = Secret::default().get();
     let redis_password = Secret::default().get();

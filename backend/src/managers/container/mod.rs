@@ -208,6 +208,7 @@ impl ContainerManager {
             env: Some(env_vars),
             exposed_ports: Some(exposed_ports),
             host_config: Some(HostConfig {
+                auto_remove: Some(true),
                 port_bindings: Some(port_bindings),
                 binds: Some(volume_bindings),
                 ..Default::default()

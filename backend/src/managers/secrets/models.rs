@@ -28,7 +28,7 @@ impl Secret {
 
 impl Default for Secret {
     fn default() -> Self {
-        Self::generate(64)
+        Self::generate(32)
     }
 }
 

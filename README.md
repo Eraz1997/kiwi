@@ -12,7 +12,7 @@ Self-hosted cloud platform for DIY projects, based on Docker containers.
     sudo setcap CAP_NET_BIND_SERVICE=+eip $(which docker)
     ```
 
-1. Create a file at `/lib/systemd/user/kiwi.service` with the following content, making sure to replace `<user>` with your user name and `<sha>` with a valid Kiwi Docker image SHA
+1. Create a file at `/etc/systemd/system/kiwi.service` with the following content, making sure to replace `<user>` with your user name and `<sha>` with a valid Kiwi Docker image SHA
 
     ```
     [Unit]
@@ -21,6 +21,8 @@ Self-hosted cloud platform for DIY projects, based on Docker containers.
     Requires=docker.service
 
     [Service]
+    User=<user>
+    Group=<user>
     TimeoutStartSec=0
     Restart=always
     ExecStartPre=-/usr/bin/docker stop kiwi
@@ -31,7 +33,7 @@ Self-hosted cloud platform for DIY projects, based on Docker containers.
         --network host \
         --add-host status.kiwi-local.com:127.0.0.1 \
         --stop-timeout 15 \
-        ghrc.io/Eraz1997/kiwi@sha256:<sha>
+        ghcr.io/eraz1997/kiwi@sha256:<sha>
     ExecStop=/usr/bin/docker exec kiwi stop
 
     [Install]
@@ -41,9 +43,9 @@ Self-hosted cloud platform for DIY projects, based on Docker containers.
 1. Activate and run the service
 
     ```shell
-    systemctl --user daemon-reload
-    systemctl --user enable kiwi.service
-    systemctl --user start kiwi.service
+    sudo systemctl daemon-reload
+    sudo systemctl enable kiwi.service
+    sudo systemctl start kiwi.service
     ```
 
 1. Based on your operating system, make sure port 443 is reachable from the Internet at your public IP address.
