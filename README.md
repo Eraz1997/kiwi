@@ -57,8 +57,8 @@ Self-hosted cloud platform for DIY projects, based on Docker containers.
 1. Reload and restart the service
 
     ```shell
-    systemctl --user daemon-reload
-    systemctl --user restart kiwi.service
+    sudo systemctl daemon-reload
+    sudo systemctl restart kiwi.service
     ```
 
 ## Usage 🚀
