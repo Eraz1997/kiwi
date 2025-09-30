@@ -20,6 +20,7 @@ export const AdminServicesNew: Component = () => {
       internal_secrets: [],
       stateful_volume_paths: [],
       github_repository: null,
+      required_role: null,
     },
   );
 

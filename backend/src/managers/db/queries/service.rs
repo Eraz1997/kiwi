@@ -18,13 +18,13 @@ impl DbManager {
         services
     }
 
-    pub async fn get_service_data(&self, name: &String) -> Result<Option<ServiceData>, Error> {
+    pub async fn get_service_data(&self, name: &str) -> Result<Option<ServiceData>, Error> {
         let client = self.connection_pool.get().await?;
         let statement = client
             .prepare_cached("SELECT * FROM services WHERE name = $1")
             .await?;
         let service = client
-            .query_opt(&statement, &[name])
+            .query_opt(&statement, &[&name])
             .await?
             .map(ServiceData::try_from)
             .and_then(Result::ok);

@@ -1,7 +1,9 @@
 use fred::prelude::{AclInterface, KeysInterface, TransactionInterface};
 
 use crate::error::Error;
-use crate::managers::redis::models::{RedisLastCertificateOrderUrl, RedisServicePort};
+use crate::managers::redis::models::{
+    RedisLastCertificateOrderUrl, RedisServiceAuthorisation, RedisServicePort,
+};
 use crate::managers::redis::{
     RedisManager,
     models::{
@@ -228,6 +230,55 @@ impl RedisManager {
         let item = RedisServicePort {
             service_name: service_name.to_string(),
             port: Some(port),
+        };
+
+        let _: () = self
+            .client
+            .set(
+                item.to_redis_key(),
+                item.to_redis_value(),
+                item.get_expiration(),
+                None,
+                false,
+            )
+            .await?;
+
+        Ok(())
+    }
+
+    pub async fn get_service_authorisation(
+        &self,
+        service_name: &str,
+    ) -> Result<Option<RedisServiceAuthorisation>, Error> {
+        let item = RedisServiceAuthorisation {
+            service_name: service_name.to_string(),
+            required_role: None,
+        };
+        let key = item.to_redis_key();
+
+        let value: Option<String> = self.client.get(key).await?;
+
+        match value {
+            Some(value) => {
+                let item = RedisServiceAuthorisation::from_redis_key_suffix_and_value(
+                    item.to_redis_key_suffix(),
+                    value,
+                )?;
+
+                Ok(Some(item))
+            }
+            None => Ok(None),
+        }
+    }
+
+    pub async fn store_service_authorisation(
+        &self,
+        service_name: &str,
+        required_role: Option<UserRole>,
+    ) -> Result<(), Error> {
+        let item = RedisServiceAuthorisation {
+            service_name: service_name.to_string(),
+            required_role,
         };
 
         let _: () = self

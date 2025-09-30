@@ -117,6 +117,7 @@ impl TryFrom<Row> for ServiceData {
                 ],
                 stateful_volume_paths: value.try_get("stateful_volume_paths")?,
                 github_repository,
+                required_role: value.try_get("required_role")?,
             },
             created_at: value.try_get("created_at")?,
             last_modified_at: value.try_get("last_modified_at")?,

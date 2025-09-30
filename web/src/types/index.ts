@@ -21,6 +21,7 @@ export type ContainerConfiguration = {
   internal_secrets: EnvironmentVariable[];
   stateful_volume_paths: string[];
   github_repository: GithubRepository | null;
+  required_role: Role | null;
 };
 
 export type Service = {

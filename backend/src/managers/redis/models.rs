@@ -217,6 +217,48 @@ impl RedisItem for RedisServicePort {
     }
 }
 
+pub struct RedisServiceAuthorisation {
+    pub service_name: String,
+    pub required_role: Option<UserRole>,
+}
+
+impl RedisItem for RedisServiceAuthorisation {
+    fn to_redis_key_suffix(&self) -> String {
+        format!("service_authorisation:{}", self.service_name)
+    }
+
+    fn to_redis_value(&self) -> String {
+        match &self.required_role {
+            Some(role) => role.to_string(),
+            None => "".to_string(),
+        }
+    }
+
+    fn get_expiration(&self) -> Option<Expiration> {
+        Some(Expiration::EX(Duration::minutes(10).whole_seconds()))
+    }
+
+    fn from_redis_key_suffix_and_value(key_suffix: String, value: String) -> Result<Self, Error> {
+        let mut consumed_key = key_suffix.clone();
+        if !consumed_key.starts_with("service_authorisation:") {
+            return Err(Error::serialisation());
+        }
+        consumed_key = consumed_key[22..].to_string();
+        let service_name = consumed_key;
+
+        let required_role = if value.is_empty() {
+            None
+        } else {
+            Some(UserRole::from_str(&value)?)
+        };
+
+        Ok(RedisServiceAuthorisation {
+            service_name,
+            required_role,
+        })
+    }
+}
+
 pub struct RedisLastCertificateOrderUrl {
     pub order_url: String,
 }

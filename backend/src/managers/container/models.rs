@@ -7,6 +7,7 @@ use sha256::digest;
 
 use crate::error::Error;
 use crate::managers::db::constants::DATABASE_NAME;
+use crate::models::UserRole;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ImageSha {
@@ -94,6 +95,7 @@ pub struct ContainerConfiguration {
     pub internal_secrets: Vec<EnvironmentVariable>,
     pub stateful_volume_paths: Vec<String>,
     pub github_repository: Option<GithubRepository>,
+    pub required_role: Option<UserRole>,
 }
 
 impl ContainerConfiguration {
@@ -125,6 +127,7 @@ impl ContainerConfiguration {
             ],
             stateful_volume_paths: vec!["/var/lib/postgresql/data".to_string()],
             github_repository: None,
+            required_role: None,
         })
     }
 
@@ -144,6 +147,7 @@ impl ContainerConfiguration {
             }],
             stateful_volume_paths: vec!["/bitnami/redis/data".to_string()],
             github_repository: None,
+            required_role: None,
         })
     }
 

@@ -51,6 +51,13 @@ impl Error {
             message: "something went wrong with the server jobs".to_string(),
         }
     }
+
+    pub fn internal_authorisation_failure() -> Self {
+        Self {
+            code: StatusCode::INTERNAL_SERVER_ERROR,
+            message: "there was an internal authorisation failure".to_string(),
+        }
+    }
 }
 
 impl Display for Error {

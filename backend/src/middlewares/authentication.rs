@@ -12,11 +12,15 @@ use crate::{
     constants::{ACCESS_TOKEN_COOKIE_NAME, KIWI_USER_ID_HEADER_NAME, KIWI_USERNAME_HEADER_NAME},
     error::Error,
     extractors::{Domain, FullOriginalUri},
-    managers::redis::RedisManager,
+    managers::{
+        db::DbManager,
+        redis::{RedisManager, models::RedisServiceAuthorisation},
+    },
     models::UserRole,
 };
 
 pub async fn authentication_middleware(
+    db_manager: Extension<DbManager>,
     redis_manager: Extension<RedisManager>,
     cookie_jar: CookieJar,
     Domain(domain): Domain,
@@ -35,9 +39,33 @@ pub async fn authentication_middleware(
         .find(|part| !part.is_empty())
         .unwrap_or_default();
 
-    let required_role = match service {
-        "admin" => Some(UserRole::Admin),
-        _ => None,
+    let required_role = if service == "admin" {
+        Some(UserRole::Admin)
+    } else {
+        match redis_manager.get_service_authorisation(service).await {
+            Ok(Some(RedisServiceAuthorisation {
+                service_name: _,
+                required_role,
+            })) => required_role,
+            Ok(None) => match db_manager.get_service_data(service).await {
+                Ok(Some(service_data)) => {
+                    let required_role = service_data.container_configuration.required_role;
+                    if let Err(error) = redis_manager
+                        .store_service_authorisation(service, required_role.clone())
+                        .await
+                    {
+                        tracing::error!(
+                            "failed to store service authorisation information on Redis: {}",
+                            error
+                        );
+                    }
+                    required_role
+                }
+                Ok(None) => None,
+                Err(_) => return Error::internal_authorisation_failure().into_response(),
+            },
+            Err(_) => return Error::internal_authorisation_failure().into_response(),
+        }
     };
 
     let access_token = cookie_jar

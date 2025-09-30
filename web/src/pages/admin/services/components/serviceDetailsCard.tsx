@@ -8,6 +8,7 @@ import {
   Info,
   Plus,
   Satellite,
+  ScanFace,
   Shrimp,
   Trash2,
   Variable,
@@ -19,11 +20,12 @@ import { Button } from "src/components/ui/button";
 import { Card } from "src/components/ui/card";
 import { Field } from "src/components/ui/field";
 import { Heading } from "src/components/ui/heading";
+import { Switch as SwitchToggle } from "src/components/ui/switch";
 import { Text } from "src/components/ui/text";
 import { useRouter } from "src/contexts/router";
 import { createAsyncAction } from "src/hooks/createAsyncAction";
 import { createBackendClient } from "src/hooks/createBackendClient";
-import { ContainerConfiguration } from "src/types";
+import { ContainerConfiguration, Role } from "src/types";
 import { HStack, VStack } from "styled-system/jsx";
 
 type Props = {
@@ -142,6 +144,23 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
                 />
                 <Field.ErrorText>Please enter a valid name</Field.ErrorText>
               </Field.Root>
+            </VStack>
+            <VStack gap="4" alignItems="start" width="full">
+              <Heading size="md" display="flex" gap="2">
+                Authorisation <ScanFace />
+              </Heading>
+              <SwitchToggle
+                checked={!!props.containerConfiguration.required_role}
+                onCheckedChange={(event) => {
+                  const requiredRole = event.checked ? Role.Customer : null;
+                  props.setContainerConfiguration(
+                    "required_role",
+                    requiredRole,
+                  );
+                }}
+              >
+                Restricted to Members
+              </SwitchToggle>
             </VStack>
             <VStack gap="4" alignItems="start" width="full">
               <Heading size="md" display="flex" gap="2">
