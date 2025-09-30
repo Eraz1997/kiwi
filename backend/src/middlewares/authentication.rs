@@ -9,7 +9,7 @@ use axum_extra::extract::CookieJar;
 use urlencoding::encode;
 
 use crate::{
-    constants::{ACCESS_TOKEN_COOKIE_NAME, KIWI_USER_ID_HEADER_NAME},
+    constants::{ACCESS_TOKEN_COOKIE_NAME, KIWI_USER_ID_HEADER_NAME, KIWI_USERNAME_HEADER_NAME},
     error::Error,
     extractors::{Domain, FullOriginalUri},
     managers::redis::RedisManager,
@@ -26,6 +26,7 @@ pub async fn authentication_middleware(
 ) -> Response {
     // Remove any abused auth header
     request.headers_mut().remove(KIWI_USER_ID_HEADER_NAME);
+    request.headers_mut().remove(KIWI_USERNAME_HEADER_NAME);
 
     let service = request
         .uri()
@@ -59,10 +60,16 @@ pub async fn authentication_middleware(
 
             if !access_token_item.role.has_permissions(&required_role) {
                 Error::bad_permissions().into_response()
-            } else if let Ok(user_id_header_value) = HeaderValue::from_str(&user_id_string) {
+            } else if let (Ok(user_id_header_value), Ok(username_header_value)) = (
+                HeaderValue::from_str(&user_id_string),
+                HeaderValue::from_str(&access_token_item.username),
+            ) {
                 request
                     .headers_mut()
                     .append(KIWI_USER_ID_HEADER_NAME, user_id_header_value);
+                request
+                    .headers_mut()
+                    .append(KIWI_USERNAME_HEADER_NAME, username_header_value);
                 next.run(request).await
             } else {
                 Error::serialisation().into_response()

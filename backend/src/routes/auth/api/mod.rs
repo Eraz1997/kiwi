@@ -70,6 +70,7 @@ async fn create_user(
         domain,
         redis_manager,
         user_data.id,
+        user_data.username,
         sealing_key,
         user_data.role,
         None,
@@ -103,6 +104,7 @@ async fn login(
         domain,
         redis_manager,
         user_data.id,
+        user_data.username,
         sealing_key,
         user_data.role,
         None,
@@ -170,6 +172,7 @@ async fn refresh_credentials(
                 domain,
                 redis_manager,
                 data.user_id,
+                data.username,
                 data.sealing_key,
                 data.role,
                 Some(refresh_token),
@@ -254,6 +257,7 @@ async fn generate_and_store_tokens(
     domain: String,
     redis_manager: RedisManager,
     user_id: i64,
+    username: String,
     sealing_key: String,
     role: UserRole,
     old_refresh_token: Option<String>,
@@ -268,13 +272,21 @@ async fn generate_and_store_tokens(
                 &access_token,
                 &refresh_token,
                 user_id,
+                &username,
                 &sealing_key,
                 &role,
             )
             .await?;
     } else {
         redis_manager
-            .store_active_auth_tokens(&access_token, &refresh_token, user_id, &sealing_key, &role)
+            .store_active_auth_tokens(
+                &access_token,
+                &refresh_token,
+                user_id,
+                &username,
+                &sealing_key,
+                &role,
+            )
             .await?;
     }
 

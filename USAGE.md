@@ -46,6 +46,11 @@ For each service, Kiwi creates **a PostgreSQL database with credentials** and **
 - `KIWI_REDIS_URI`, with the URI of the Redis instance your service can access, already including username and password
 - `KIWI_REDIS_PREFIX`, with the prefix of the Redis keys your service can access inside the instance
 
+Moreover, each HTTP request is added the following headers
+
+- `X-Kiwi-User-Id`, containing the ID of the user in case they're authenticated. The header is omitted otherwise.
+- `X-Kiwi-Username`, containing the username of the user in case they're authenticated. The header is omitted otherwise.
+
 ### CI and Deployment 🧑‍🚀
 
 > [!NOTE]

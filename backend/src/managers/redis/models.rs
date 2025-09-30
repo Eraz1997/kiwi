@@ -32,6 +32,7 @@ pub trait RedisItem: Sized {
 pub struct RedisAccessToken {
     pub access_token: String,
     pub user_id: i64,
+    pub username: String,
     pub sealing_key: String,
     pub role: UserRole,
 }
@@ -42,7 +43,10 @@ impl RedisItem for RedisAccessToken {
     }
 
     fn to_redis_value(&self) -> String {
-        format!("{}:{}:{}", self.user_id, self.sealing_key, self.role)
+        format!(
+            "{}:{}:{}:{}",
+            self.user_id, self.username, self.sealing_key, self.role
+        )
     }
 
     fn get_expiration(&self) -> Option<Expiration> {
@@ -63,13 +67,15 @@ impl RedisItem for RedisAccessToken {
             .ok_or(Error::serialisation())?
             .parse()
             .map_err(|_| Error::serialisation())?;
-        let sealing_key = values.get(1).ok_or(Error::serialisation())?.clone();
-        let role_raw = values.get(2).ok_or(Error::serialisation())?.clone();
+        let username = values.get(1).ok_or(Error::serialisation())?.clone();
+        let sealing_key = values.get(2).ok_or(Error::serialisation())?.clone();
+        let role_raw = values.get(3).ok_or(Error::serialisation())?.clone();
         let role = UserRole::from_str(&role_raw)?;
 
         Ok(RedisAccessToken {
             access_token: consumed_key,
             user_id,
+            username,
             sealing_key,
             role,
         })
@@ -78,6 +84,7 @@ impl RedisItem for RedisAccessToken {
 
 pub struct RedisActiveRefreshToken {
     pub user_id: i64,
+    pub username: String,
     pub sealing_key: String,
     pub role: UserRole,
 }
@@ -105,7 +112,10 @@ impl RedisItem for RedisRefreshToken {
     fn to_redis_value(&self) -> String {
         match &self.kind {
             RedisRefreshTokenKind::Active(data) => {
-                format!("active:{}:{}:{}", data.user_id, data.sealing_key, data.role,)
+                format!(
+                    "active:{}:{}:{}:{}",
+                    data.user_id, data.username, data.sealing_key, data.role,
+                )
             }
             RedisRefreshTokenKind::Refreshed(data) => format!(
                 "refreshed:{}:{}",
@@ -138,13 +148,15 @@ impl RedisItem for RedisRefreshToken {
             "active" => {
                 let raw_user_id = values.get(1).ok_or(Error::serialisation())?;
                 let user_id: i64 = raw_user_id.parse().map_err(|_| Error::serialisation())?;
-                let sealing_key = values.get(2).ok_or(Error::serialisation())?.to_owned();
-                let role_raw = values.get(3).ok_or(Error::serialisation())?.clone();
+                let username = values.get(2).ok_or(Error::serialisation())?.to_owned();
+                let sealing_key = values.get(3).ok_or(Error::serialisation())?.to_owned();
+                let role_raw = values.get(4).ok_or(Error::serialisation())?.clone();
                 let role = UserRole::from_str(&role_raw)?;
                 Ok(RedisRefreshToken {
                     refresh_token: consumed_key,
                     kind: RedisRefreshTokenKind::Active(RedisActiveRefreshToken {
                         user_id,
+                        username,
                         sealing_key,
                         role,
                     }),
