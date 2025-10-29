@@ -53,6 +53,7 @@ impl OidcManager {
 
         let mut validation = Validation::new(Algorithm::RS256);
         validation.set_audience(&["kiwiDeploy"]);
+        validation.set_issuer(&["https://token.actions.githubusercontent.com"]);
 
         let claims = decode::<GithubClaims>(token, &decoding_key, &validation)
             .map_err(|_| Error::invalid_jwt())?
