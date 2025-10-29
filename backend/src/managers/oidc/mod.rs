@@ -52,7 +52,7 @@ impl OidcManager {
             .map_err(|_| Error::invalid_key())?;
 
         let mut validation = Validation::new(Algorithm::RS256);
-        validation.set_audience(&["https://token.actions.githubusercontent.com"]);
+        validation.set_audience(&["kiwiDeploy"]);
 
         let claims = decode::<GithubClaims>(token, &decoding_key, &validation)
             .map_err(|_| Error::invalid_jwt())?
