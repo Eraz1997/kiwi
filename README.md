@@ -51,6 +51,15 @@ Self-hosted cloud platform for DIY projects, based on Docker containers.
 1. Based on your operating system, make sure port 443 is reachable from the Internet at your public IP address.
 1. Configure a domain and a wildcard `A` record pointing to your public IP address. Kiwi won't work without a proper initial DNS setup. Do not worry about Dynamic DNS, it's part of the features Kiwi offers.
 
+### If you don't have a public IP address 📢
+
+If your router is behind CG-NAT or anyway doesn't allow you to do port-forwarding, you can leverage Cloudflare Tunnels.
+
+1. Sign up to Cloudflare One with a Free Plan
+1. "Onboard your domain", import DNS records automatically and follow instructions
+1. Go to `Zero Trust -> Networking -> Connectors -> Tunnels`, create a tunnel and follow installation steps on your machine
+1. Open the tunnel configuration in the dashboard and add a route for `Published application` with your domain and `*` as subdomain, `https://localhost:443` as hostname, and `No TLS Verify` enabled.
+
 ### Updates 🙃
 
 1. Replace the Docker image `<sha>` with a newer value inside the `/lib/systemd/user/kiwi.service` file

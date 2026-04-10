@@ -5,7 +5,7 @@
 At the first start, Kiwi won't have any users, not even the administrator. Run
 
 ```shell
-journalctl --user kiwi.service
+sudo journalctl --user kiwi.service
 ```
 
 and you will find a warning log saying something like `admin user not found. invitation created with ID: <id>. please visit https://auth.<your-domain>/create-user?invitation_id=<id>`.
@@ -17,13 +17,16 @@ Now you can access the admin dashboard at `https://admin.<your-domain>`. From th
 ### Dynamic DNS 🐎
 
 > [!NOTE]
-> Dynamic DNS currently supports GoDaddy as provider only.
+> Dynamic DNS currently supports GoDaddy as provider only. You don't need dynamic DNS if you use Cloudflare Tunnels.
 
 If you are hosting Kiwi on a device with a dynamic public IP address and are using a supported DNS provider (see above), Kiwi lets you set up dynamic DNS to make sure your instance is always online with minimal downtime.
 
 Access the Kiwi admin dashboard, go to the **Dynamic DNS** section and provide Kiwi with your DNS provider API credentials. Since then, Kiwi will periodically check any changes to your instance's public address and will update your DNS records accordingly.
 
 ### TLS 🗝️
+
+> [!NOTE]
+> You don't need to set up TLS if you use Cloudflare Tunnels.
 
 At the first start, Kiwi generates a self-signed certificate to be able to start communicating with HTTPS from the very beginning. Nonetheless, to ensure correct identity verification, you need to set up a proper certificate trusted by legitimate Certificate Authorities.
 
