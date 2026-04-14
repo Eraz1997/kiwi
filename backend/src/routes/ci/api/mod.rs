@@ -1,4 +1,8 @@
-use axum::{Extension, Json, Router, extract::Path, routing::post};
+use axum::{
+    Extension, Json, Router,
+    extract::{Multipart, Path},
+    routing::post,
+};
 
 use crate::{
     error::Error,
@@ -17,7 +21,9 @@ mod error;
 mod models;
 
 pub fn create_router() -> Router {
-    Router::new().route("/deploy/{service_name}", post(deploy_service))
+    Router::new()
+        .route("/deploy/{service_name}", post(deploy_service))
+        .route("/push-tarball", post(push_tarball))
 }
 
 async fn deploy_service(
@@ -59,6 +65,73 @@ async fn deploy_service(
     container_manager
         .start_container(&new_container_configuration)
         .await?;
+
+    Ok(())
+}
+
+async fn push_tarball(
+    Extension(oidc_manager): Extension<OidcManager>,
+    Extension(container_manager): Extension<ContainerManager>,
+    Extension(db_manager): Extension<DbManager>,
+    mut multipart: Multipart,
+) -> Result<(), Error> {
+    let mut oidc_token: Option<String> = None;
+    let mut tarball: Option<Vec<u8>> = None;
+
+    while let Some(field) = multipart
+        .next_field()
+        .await
+        .map_err(|_| Error::invalid_ci_payload("malformed multipart payload"))?
+    {
+        match field.name() {
+            Some("oidc_token") => {
+                oidc_token = Some(
+                    field
+                        .text()
+                        .await
+                        .map_err(|_| Error::invalid_ci_payload("cannot parse oidc_token field"))?,
+                );
+            }
+            Some("tarball") => {
+                tarball = Some(
+                    field
+                        .bytes()
+                        .await
+                        .map_err(|_| Error::invalid_ci_payload("cannot parse tarball field"))?
+                        .to_vec(),
+                );
+            }
+            _ => {}
+        }
+    }
+
+    let oidc_token =
+        oidc_token.ok_or(Error::invalid_ci_payload("missing oidc_token form field"))?;
+    let tarball = tarball.ok_or(Error::invalid_ci_payload("missing tarball form field"))?;
+    if tarball.is_empty() {
+        return Err(Error::invalid_ci_payload("tarball cannot be empty"));
+    }
+
+    let token = oidc_manager.validate_github_oidc_token(&oidc_token).await?;
+    let github_repo = GithubRepository::try_from(token.repository)?;
+
+    if token.reference != "refs/heads/main" {
+        return Err(Error::invalid_branch());
+    }
+
+    let services = db_manager.get_services_data().await?;
+    let is_authorised_repo = services.iter().any(|service| {
+        service
+            .container_configuration
+            .github_repository
+            .as_ref()
+            .is_some_and(|repo| *repo == github_repo)
+    });
+    if !is_authorised_repo {
+        return Err(Error::invalid_repo_for_service());
+    }
+
+    container_manager.load_image_tarball(tarball).await?;
 
     Ok(())
 }

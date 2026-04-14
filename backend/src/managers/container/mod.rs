@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::net::{Ipv4Addr, SocketAddrV4, TcpListener};
+use std::process::Command;
 
 use crate::error::Error;
 use crate::managers::container::models::Log;
@@ -24,6 +25,7 @@ use chrono::NaiveDateTime;
 use futures::TryStreamExt;
 use futures::stream::StreamExt;
 use models::ContainerConfiguration;
+use uuid::Uuid;
 
 pub mod error;
 pub mod models;
@@ -399,5 +401,24 @@ impl ContainerManager {
     pub async fn prune_unused_images(&self) -> Result<(), Error> {
         self.client.prune_images(None::<PruneImagesOptions>).await?;
         Ok(())
+    }
+
+    pub async fn load_image_tarball(&self, tarball: Vec<u8>) -> Result<(), Error> {
+        let tarball_path = std::env::temp_dir().join(format!("kiwi-image-{}.tar", Uuid::new_v4()));
+        std::fs::write(&tarball_path, tarball)?;
+
+        let output = Command::new("docker")
+            .arg("load")
+            .arg("-i")
+            .arg(&tarball_path)
+            .output()?;
+
+        let _ = std::fs::remove_file(&tarball_path);
+
+        if output.status.success() {
+            Ok(())
+        } else {
+            Err(Error::could_not_load_docker_image())
+        }
     }
 }

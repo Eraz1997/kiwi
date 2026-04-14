@@ -16,6 +16,13 @@ impl Error {
         }
     }
 
+    pub fn could_not_load_docker_image() -> Self {
+        Self {
+            code: StatusCode::INTERNAL_SERVER_ERROR,
+            message: "could not load docker image".to_string(),
+        }
+    }
+
     pub fn network_name_not_found() -> Self {
         Self {
             code: StatusCode::INTERNAL_SERVER_ERROR,

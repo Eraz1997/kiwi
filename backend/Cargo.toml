@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 argon2 = "0.5.3"
-axum = { version = "0.8.4", features = ["http2", "macros"] }
+axum = { version = "0.8.4", features = ["http2", "macros", "multipart"] }
 axum-extra = { version = "0.10.1", features = ["cookie"] }
 axum-server = { version = "0.7.2", features = ["tls-rustls"] }
 bollard = "0.19.0"

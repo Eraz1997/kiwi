@@ -2,6 +2,13 @@ use crate::error::Error;
 use axum::http::StatusCode;
 
 impl Error {
+    pub fn invalid_ci_payload(message: &str) -> Self {
+        Self {
+            code: StatusCode::BAD_REQUEST,
+            message: message.to_string(),
+        }
+    }
+
     pub fn invalid_branch() -> Self {
         Self {
             code: StatusCode::FORBIDDEN,

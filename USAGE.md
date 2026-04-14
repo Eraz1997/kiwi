@@ -103,7 +103,27 @@ jobs:
       - name: Deploy
         uses: Eraz1997/kiwi/ci@<commit-sha>
         with:
-            kiwi-domain: <your-domain>
-            service-name: <service-to-deploy>
-            image-sha: ${{ steps.build-and-push.outputs.digest }}
+          kiwi-domain: <your-domain>
+          service-name: <service-to-deploy>
+          image-sha: ${{ steps.build-and-push.outputs.digest }}
+```
+
+If you don't have a registry to push your changes to, you can save the image tarball and push it directly to Kiwi:
+
+```yaml
+      - name: Build and push
+        id: build-and-push
+        uses: docker/build-push-action@<commit-sha>
+        with:
+          push: false
+          tags: <your-tag>
+          outputs: type=docker,dest=/tmp/docker-image.tar
+      
+      - name: Deploy
+        uses: Eraz1997/kiwi/ci@<commit-sha>
+        with:
+          kiwi-domain: <your-domain>
+          service-name: <service-to-deploy>
+          image-sha: ${{ steps.build-and-push.outputs.digest }}
+          tarball: /tmp/docker-image.tar
 ```

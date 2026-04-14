@@ -14,6 +14,10 @@ inputs:
     description: the SHA256 sum of your Docker image
     type: string
     required: true
+  tarball:
+    description: path to a Docker image tarball to load into Kiwi before deploy
+    type: string
+    required: false
 
 runs:
   using: composite
@@ -22,11 +26,19 @@ runs:
       run: |
         sudo apt update
         sudo apt install -y curl
+    
+    - name: Upload tarball
+      if: ${{ inputs.tarball != '' }}
+      run: |
+        curl -X POST https://ci.${{ inputs.kiwi-domain }}/api/push-tarball \
+          -F "oidc_token=$token" \
+          -F "tarball=@${{ inputs.tarball }}" \
+          --fail-with-body
 
     - name: Deploy service
       run: |
         token=$(curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=kiwiDeploy" | jq -r '.value')
-        curl -X POST https://ci.${{ inputs.kiwi-domain }}/deploy/${{ inputs.service-name }} \
+        curl -X POST https://ci.${{ inputs.kiwi-domain }}/api/deploy/${{ inputs.service-name }} \
           -H "Content-Type: application/json" \
-          -d '{"oidc_token": "$token", "image_sha": "${{ inputs.image-sha }}"}' \
+          -d '{"oidc_token": "'"$token"'", "image_sha": "'"${{ inputs.image-sha }}"'"}' \
           --fail-with-body
