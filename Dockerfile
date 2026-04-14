@@ -32,7 +32,7 @@ from debian@sha256:c2880112cc5c61e1200c26f106e4123627b49726375eb5846313da9cca117
 
     ## Set Up Health Checks
 
-    healthcheck --interval=10s --timeout=1m --retries=5 --start-interval=20s cmd curl -k https://status.kiwi-local.com:5000
+    healthcheck --interval=10s --timeout=1m --retries=5 --start-interval=20s cmd curl -k https://status.kiwi-local.com:5000/api/health
 
     ## Runtime Command
 
