@@ -149,18 +149,28 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
               <Heading size="md" display="flex" gap="2">
                 Authorisation <ScanFace />
               </Heading>
-              <SwitchToggle
-                checked={!!props.containerConfiguration.required_role}
-                onCheckedChange={(event) => {
-                  const requiredRole = event.checked ? Role.Customer : null;
+              <RadioGroup.Root
+                defaultValue="None"
+                onValueChange={(event) => {
+                  const requiredRole = event.value ? Role.Customer : null;
                   props.setContainerConfiguration(
                     "required_role",
                     requiredRole,
                   );
                 }}
               >
-                Restricted to Members
-              </SwitchToggle>
+                <For each={[null, Role.Customer, Role.Admin]}>
+                  {(role) => (
+                    <RadioGroup.Item value={role ?? "None"}>
+                      <RadioGroup.ItemHiddenInput />
+                      <RadioGroup.ItemControl />
+                      <RadioGroup.ItemText>
+                        {role ?? "None"}
+                      </RadioGroup.ItemText>
+                    </RadioGroup.Item>
+                  )}
+                </For>
+              </RadioGroup.Root>
             </VStack>
             <VStack gap="4" alignItems="start" width="full">
               <Heading size="md" display="flex" gap="2">

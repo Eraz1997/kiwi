@@ -18,7 +18,7 @@ export const AdminIndex: Component = () => {
   return (
     <VStack gap="16">
       <NavigationBar />
-      <Container p="12" maxW="2xl">
+      <Container px="12" pb="12" maxW="2xl">
         <HStack gap="6" flexWrap="wrap" justifyContent="space-evenly">
           <Card.Root width="2xs">
             <Card.Header>
