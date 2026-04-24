@@ -23,12 +23,14 @@ runs:
   using: composite
   steps:
     - name: Ensure cURL is installed
+      shell: bash
       run: |
         sudo apt update
         sudo apt install -y curl
     
     - name: Upload tarball
       if: ${{ inputs.tarball != '' }}
+      shell: bash
       run: |
         curl -X POST https://ci.${{ inputs.kiwi-domain }}/api/push-tarball \
           -F "oidc_token=$token" \
@@ -36,6 +38,7 @@ runs:
           --fail-with-body
 
     - name: Deploy service
+      shell: bash
       run: |
         token=$(curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=kiwiDeploy" | jq -r '.value')
         curl -X POST https://ci.${{ inputs.kiwi-domain }}/api/deploy/${{ inputs.service-name }} \
