@@ -63,7 +63,8 @@ impl DbManager {
                 postgres_password,
                 redis_username,
                 redis_password,
-                github_repository
+                github_repository,
+                required_role
             ) VALUES (
                 $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
             ) RETURNING
@@ -81,7 +82,8 @@ impl DbManager {
                 created_at,
                 last_modified_at,
                 last_deployed_at,
-                github_repository",
+                github_repository,
+                required_role",
             )
             .await?;
         let service_row = transaction
@@ -103,6 +105,7 @@ impl DbManager {
                         .github_repository
                         .clone()
                         .map(|repo| repo.to_string()),
+                    &configuration.required_role,
                 ],
             )
             .await?;
@@ -179,9 +182,10 @@ impl DbManager {
                     secrets = $6,
                     stateful_volume_paths = $7,
                     github_repository = $8,
+                    required_role = $9,
                     last_modified_at = now(),
                     last_deployed_at = now()
-                WHERE name = $9
+                WHERE name = $10
                 RETURNING
                     name,
                     image_name,
@@ -197,7 +201,8 @@ impl DbManager {
                     created_at,
                     last_modified_at,
                     last_deployed_at,
-                    github_repository",
+                    github_repository,
+                    required_role",
             )
             .await?;
         let service_row = client
@@ -215,6 +220,7 @@ impl DbManager {
                         .github_repository
                         .clone()
                         .map(|repo| repo.to_string()),
+                    &new_configuration.required_role,
                     &old_service.container_configuration.name,
                 ],
             )
