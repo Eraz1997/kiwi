@@ -1,11 +1,11 @@
 import { Container } from "../../../styled-system/jsx/container";
 import { Squirrel } from "lucide-solid";
 import { Component } from "solid-js";
-import { Card } from "src/components/ui/card";
-import { Heading } from "src/components/ui/heading";
-import { Text } from "src/components/ui/text";
 import { css } from "styled-system/css";
 import { VStack } from "styled-system/jsx";
+import { Card } from "~/components";
+import { Heading } from "~/components";
+import { Text } from "~/components";
 
 const iconClass = css({
   width: "{36}",
@@ -20,12 +20,12 @@ export const NotFound: Component = () => {
         <Card.Body>
           <VStack gap="16">
             <VStack gap="0">
-              <Heading size="7xl">404</Heading>
-              <Text size="xl">Not Found</Text>
+              <Heading textStyle="7xl">404</Heading>
+              <Text textStyle="xl">Not Found</Text>
             </VStack>
             <VStack gap="4">
               <Squirrel class={iconClass} />
-              <Text size="md">
+              <Text textStyle="md">
                 We couldn't find what you were looking for, but we just found a
                 cute squirrel.
               </Text>

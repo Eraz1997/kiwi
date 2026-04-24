@@ -2,14 +2,14 @@ import { LogsViewer } from "./components/logsViewer";
 import { ServiceDetailsCard } from "./components/serviceDetailsCard";
 import { Component, Show, createEffect } from "solid-js";
 import { SetStoreFunction, createStore } from "solid-js/store";
-import { NavigationBar } from "src/components/navigationBar";
-import { Card } from "src/components/ui/card";
-import { Spinner } from "src/components/ui/spinner";
-import { Text } from "src/components/ui/text";
-import { useRouter } from "src/contexts/router";
-import { createBackendClient } from "src/hooks/createBackendClient";
-import { ContainerConfiguration } from "src/types";
 import { Container, HStack, VStack } from "styled-system/jsx";
+import { Card } from "~/components";
+import { NavigationBar } from "~/components";
+import { Spinner } from "~/components";
+import { Text } from "~/components";
+import { useRouter } from "~/contexts/router";
+import { createBackendClient } from "~/hooks/createBackendClient";
+import { ContainerConfiguration } from "~/types";
 
 type ContainerInfo = {
   configuration: ContainerConfiguration | null;
@@ -39,7 +39,7 @@ export const AdminServicesEdit: Component = () => {
   return (
     <>
       <NavigationBar />
-      <Container p="12" maxW="4xl">
+      <Container p="12" maxW="4xl" overflowX="scroll">
         <HStack gap="10" alignItems="start">
           <Container w="sm">
             <Show
@@ -47,7 +47,7 @@ export const AdminServicesEdit: Component = () => {
               fallback={
                 <VStack gap="6">
                   <Spinner size="xl" />
-                  <Text size="lg">Loading service details...</Text>
+                  <Text textStyle="lg">Loading service details...</Text>
                 </VStack>
               }
             >

@@ -1,4 +1,4 @@
-import { useRouter } from "src/contexts/router";
+import { useRouter } from "~/contexts/router";
 
 type ParsedResponse = {
   statusCode: number;

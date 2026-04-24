@@ -9,17 +9,17 @@ import {
   X,
 } from "lucide-solid";
 import { Component, For, createSignal } from "solid-js";
-import { Button } from "src/components/ui/button";
-import { Clipboard } from "src/components/ui/clipboard";
-import { Dialog } from "src/components/ui/dialog";
-import { IconButton } from "src/components/ui/icon-button";
-import { Input } from "src/components/ui/input";
-import { Select } from "src/components/ui/select";
-import { useRouter } from "src/contexts/router";
-import { createAsyncAction } from "src/hooks/createAsyncAction";
-import { createBackendClient } from "src/hooks/createBackendClient";
-import { Role } from "src/types";
 import { HStack, Spacer, VStack } from "styled-system/jsx";
+import { Button } from "~/components";
+import { Clipboard } from "~/components";
+import { Dialog } from "~/components";
+import { IconButton } from "~/components";
+import { Input } from "~/components";
+import { Select } from "~/components";
+import { useRouter } from "~/contexts/router";
+import { createAsyncAction } from "~/hooks/createAsyncAction";
+import { createBackendClient } from "~/hooks/createBackendClient";
+import { Role } from "~/types";
 
 type Props = {
   createToast: (toast: {
@@ -88,7 +88,9 @@ export const InviteUserDialog: Component<Props> = (props) => {
                 positioning={{ sameWidth: true }}
                 collection={rolesCollection}
                 value={[selectedRole() ?? ""]}
-                onValueChange={(event) => setSelectedRole(event.items[0])}
+                onValueChange={(event: { items: Role[] }) =>
+                  setSelectedRole(event.items[0])
+                }
               >
                 <Select.Control w="sm">
                   <Select.Trigger>

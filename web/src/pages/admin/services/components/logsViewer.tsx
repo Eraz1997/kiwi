@@ -14,15 +14,16 @@ import {
   createResource,
   createSignal,
 } from "solid-js";
-import { Button } from "src/components/ui/button";
-import { Card } from "src/components/ui/card";
-import { Field } from "src/components/ui/field";
-import { Spinner } from "src/components/ui/spinner";
-import { Table } from "src/components/ui/table";
-import { Text } from "src/components/ui/text";
-import { createBackendClient } from "src/hooks/createBackendClient";
-import { ContainerLog } from "src/types";
 import { Box, HStack, VStack } from "styled-system/jsx";
+import { Button } from "~/components";
+import { Card } from "~/components";
+import { Field } from "~/components";
+import { Input } from "~/components";
+import { Spinner } from "~/components";
+import { Table } from "~/components";
+import { Text } from "~/components";
+import { createBackendClient } from "~/hooks/createBackendClient";
+import { ContainerLog } from "~/types";
 
 type Props = {
   serviceName: string | null;
@@ -55,7 +56,7 @@ export const LogsViewer: Component<Props> = (props) => {
       fallback={
         <VStack gap="6">
           <Spinner size="xl" />
-          <Text size="lg">Loading service details...</Text>
+          <Text textStyle="lg">Loading service details...</Text>
         </VStack>
       }
     >
@@ -104,7 +105,7 @@ export const LogsViewer: Component<Props> = (props) => {
             <HStack gap="4" flexWrap="wrap">
               <Field.Root flexBasis="40%" flexGrow="1">
                 <Field.Label>From Date</Field.Label>
-                <Field.Input
+                <Input
                   onChange={(event) =>
                     setStartDate(new Date(event.target.value))
                   }
@@ -113,7 +114,7 @@ export const LogsViewer: Component<Props> = (props) => {
               </Field.Root>
               <Field.Root flexBasis="40%" flexGrow="1">
                 <Field.Label>To Date</Field.Label>
-                <Field.Input
+                <Input
                   onChange={(event) => setEndDate(new Date(event.target.value))}
                   value={endDate().toISOString()}
                 />

@@ -6,17 +6,17 @@ import {
   Telescope,
 } from "lucide-solid";
 import { Component, Show, createResource, createSignal } from "solid-js";
-import { NavigationBar } from "src/components/navigationBar";
-import { Alert } from "src/components/ui/alert";
-import { Button } from "src/components/ui/button";
-import { Card } from "src/components/ui/card";
-import { Heading } from "src/components/ui/heading";
-import { Spinner } from "src/components/ui/spinner";
-import { Text } from "src/components/ui/text";
-import { useRouter } from "src/contexts/router";
-import { createAsyncAction } from "src/hooks/createAsyncAction";
-import { createBackendClient } from "src/hooks/createBackendClient";
 import { Container, HStack, VStack } from "styled-system/jsx";
+import { Alert } from "~/components";
+import { Button } from "~/components";
+import { Card } from "~/components";
+import { Heading } from "~/components";
+import { NavigationBar } from "~/components";
+import { Spinner } from "~/components";
+import { Text } from "~/components";
+import { useRouter } from "~/contexts/router";
+import { createAsyncAction } from "~/hooks/createAsyncAction";
+import { createBackendClient } from "~/hooks/createBackendClient";
 
 type CertificateInfo = {
   issuer: string;
@@ -68,7 +68,7 @@ export const Certificates: Component = () => {
   return (
     <>
       <NavigationBar />
-      <Container p="12" maxW="md">
+      <Container p="12" maxW="md" overflowX="scroll">
         <VStack gap="6">
           <Show when={error()}>
             <Alert.Root borderColor="red.default">
@@ -94,14 +94,14 @@ export const Certificates: Component = () => {
               </Card.Header>
               <Card.Body>
                 <VStack gap="4" alignItems="start" width="full">
-                  <Text size="xs">
+                  <Text textStyle="xs">
                     TLS certificates are issued by Let's Encrypt for free.
                   </Text>
-                  <Heading size="md" display="flex" gap="2">
+                  <Heading textStyle="md" display="flex" gap="2">
                     Issuer <Signature />
                   </Heading>
                   <Text>{certificateInfo()?.issuer}</Text>
-                  <Heading size="md" display="flex" gap="2">
+                  <Heading textStyle="md" display="flex" gap="2">
                     Expiration <CalendarClock />
                   </Heading>
                   <Text>{certificateInfo()?.expiration_date}</Text>

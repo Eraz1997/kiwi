@@ -1,9 +1,9 @@
 import { Bomb, Trash2, X } from "lucide-solid";
 import { Component } from "solid-js";
-import { Button } from "src/components/ui/button";
-import { Dialog } from "src/components/ui/dialog";
-import { IconButton } from "src/components/ui/icon-button";
 import { HStack, Spacer, VStack } from "styled-system/jsx";
+import { Button } from "~/components";
+import { Dialog } from "~/components";
+import { IconButton } from "~/components";
 
 type Props = {
   loading: boolean;

@@ -2,13 +2,11 @@ import { DeleteUserDialog } from "./components/deleteUserDialog";
 import { InviteUserDialog } from "./components/inviteUserDialog";
 import { X } from "lucide-solid";
 import { Component, For, createResource } from "solid-js";
-import { NavigationBar } from "src/components/navigationBar";
-import { IconButton } from "src/components/ui/icon-button";
-import { Table } from "src/components/ui/table";
-import { Toast } from "src/components/ui/toast";
-import { createBackendClient } from "src/hooks/createBackendClient";
-import { User } from "src/types";
 import { Container } from "styled-system/jsx";
+import { IconButton, NavigationBar } from "~/components";
+import { Table, Toast } from "~/components";
+import { createBackendClient } from "~/hooks/createBackendClient";
+import { User } from "~/types";
 
 const toaster = Toast.createToaster({
   placement: "bottom-end",
@@ -31,7 +29,7 @@ export const AdminUsers: Component = () => {
   return (
     <>
       <NavigationBar />
-      <Container p="12" maxW="4xl">
+      <Container p="12" maxW="4xl" overflowX="scroll">
         <Table.Root>
           <Table.Head>
             <Table.Row>

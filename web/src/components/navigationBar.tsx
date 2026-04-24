@@ -1,13 +1,14 @@
-import { Avatar } from "./ui/avatar";
-import { Button } from "./ui/button";
-import { Menu } from "./ui/menu";
+import { Avatar } from ".";
+import { Menu } from ".";
+import { Button } from "./button";
+import { Heading } from "./heading";
 import { ChevronLeft, LogOutIcon } from "lucide-solid";
 import { Component, createResource } from "solid-js";
-import { Heading } from "src/components/ui/heading";
-import { Page, useRouter } from "src/contexts/router";
-import { createBackendClient } from "src/hooks/createBackendClient";
-import { User } from "src/types";
+import { css } from "styled-system/css";
 import { HStack } from "styled-system/jsx";
+import { Page, useRouter } from "~/contexts/router";
+import { createBackendClient } from "~/hooks/createBackendClient";
+import { User } from "~/types";
 
 export const NavigationBar: Component = () => {
   const { currentPage, navigate } = useRouter();
@@ -17,6 +18,11 @@ export const NavigationBar: Component = () => {
     const { jsonPayload: user } = await adminClient.get("/users/me");
     return user;
   });
+  const userInitials = () => {
+    const username = user()?.username;
+    if (!username) return ":)";
+    return username[0].toUpperCase();
+  };
 
   const title = () => {
     if (currentPage() === "admin") {
@@ -67,7 +73,6 @@ export const NavigationBar: Component = () => {
   return (
     <>
       <HStack
-        gap="16"
         borderColor="border.subtle"
         borderBottomWidth="1"
         borderStyle="solid"
@@ -77,8 +82,8 @@ export const NavigationBar: Component = () => {
         bg="bg.canvas"
         zIndex="sticky"
         height="16"
-        px="12"
-        w="full"
+        px={{ base: "12", mdDown: "4" }}
+        w="100vw"
       >
         <HStack gap="6">
           <Button
@@ -95,16 +100,23 @@ export const NavigationBar: Component = () => {
           >
             <ChevronLeft />
           </Button>
-          <Heading textWrap="nowrap" size={{ base: "4xl", smDown: "2xl" }}>
-            Kiwi 🥝
+          <Heading textWrap="nowrap" textStyle="4xl">
+            <span class={css({ display: { smDown: "none" } })}>Kiwi</span> 🥝
           </Heading>
         </HStack>
-        <Heading size="xl" flex="1" textAlign="end">
+        <Heading
+          textStyle="xl"
+          flex="1"
+          textAlign="end"
+          mr={{ base: "16", smDown: "8" }}
+        >
           {title()}
         </Heading>
         <Menu.Root>
           <Menu.Trigger>
-            <Avatar cursor="pointer" name={user()?.username ?? ""} />
+            <Avatar.Root cursor="pointer">
+              <Avatar.Fallback>{userInitials()}</Avatar.Fallback>
+            </Avatar.Root>
           </Menu.Trigger>
           <Menu.Positioner>
             <Menu.Content>

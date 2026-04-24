@@ -1,21 +1,22 @@
 import { Container } from "../../../styled-system/jsx/container";
 import { CircleSlash, PartyPopper, Rocket } from "lucide-solid";
 import { Component, Match, Show, Switch, createSignal } from "solid-js";
-import { Alert } from "src/components/ui/alert";
-import { Button } from "src/components/ui/button";
-import { Card } from "src/components/ui/card";
-import { Field } from "src/components/ui/field";
-import { Heading } from "src/components/ui/heading";
-import { useRouter } from "src/contexts/router";
-import { createAsyncAction } from "src/hooks/createAsyncAction";
-import { createBackendClient } from "src/hooks/createBackendClient";
-import { createCredentialsClient } from "src/hooks/createCredentialsClient";
+import { VStack } from "styled-system/jsx";
+import { Alert } from "~/components";
+import { Button } from "~/components";
+import { Card } from "~/components";
+import { Field } from "~/components";
+import { Heading } from "~/components";
+import { Input } from "~/components";
+import { useRouter } from "~/contexts/router";
+import { createAsyncAction } from "~/hooks/createAsyncAction";
+import { createBackendClient } from "~/hooks/createBackendClient";
+import { createCredentialsClient } from "~/hooks/createCredentialsClient";
 import {
   PASSWORD_VALIDATOR,
   USERNAME_VALIDATOR,
   createValidatedSignal,
-} from "src/hooks/createValidatedSignal";
-import { VStack } from "styled-system/jsx";
+} from "~/hooks/createValidatedSignal";
 
 type LoginError = "unknown" | "bad credentials";
 
@@ -62,7 +63,7 @@ export const Login: Component = () => {
   return (
     <Container p="12" maxW="md">
       <VStack gap="6">
-        <Heading size="6xl">🥝</Heading>
+        <Heading textStyle="6xl">🥝</Heading>
         <Show when={success()}>
           <Alert.Root borderColor="lime.default">
             <Alert.Icon
@@ -112,9 +113,7 @@ export const Login: Component = () => {
                 invalid={!!username() && !isUsernameValid()}
               >
                 <Field.Label>Username</Field.Label>
-                <Field.Input
-                  onChange={(event) => setUsername(event.target.value)}
-                />
+                <Input onChange={(event) => setUsername(event.target.value)} />
                 <Field.ErrorText>Please enter a valid username</Field.ErrorText>
               </Field.Root>
               <Field.Root
@@ -122,7 +121,7 @@ export const Login: Component = () => {
                 invalid={!!password() && !isPasswordValid()}
               >
                 <Field.Label>Password</Field.Label>
-                <Field.Input
+                <Input
                   type="password"
                   onChange={(event) => setPassword(event.target.value)}
                 />

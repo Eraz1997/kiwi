@@ -27,7 +27,7 @@ runs:
         pnpm install
         pnpm prettier . --check
         pnpm eslint .
-        pnpm tsc --project tsconfig.lint.json
+        pnpm tsc
         cd ..
 
     - name: Lint Backend

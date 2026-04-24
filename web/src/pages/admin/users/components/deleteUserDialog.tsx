@@ -1,12 +1,12 @@
 import { Bomb, Trash2, X } from "lucide-solid";
 import { Component } from "solid-js";
-import { Button } from "src/components/ui/button";
-import { Dialog } from "src/components/ui/dialog";
-import { IconButton } from "src/components/ui/icon-button";
-import { createAsyncAction } from "src/hooks/createAsyncAction";
-import { createBackendClient } from "src/hooks/createBackendClient";
-import { User } from "src/types";
 import { HStack, Spacer, VStack } from "styled-system/jsx";
+import { Button } from "~/components";
+import { Dialog } from "~/components";
+import { IconButton } from "~/components";
+import { createAsyncAction } from "~/hooks/createAsyncAction";
+import { createBackendClient } from "~/hooks/createBackendClient";
+import { User } from "~/types";
 
 type Props = {
   userToDelete: User;

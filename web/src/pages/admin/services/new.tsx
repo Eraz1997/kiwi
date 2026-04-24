@@ -1,9 +1,9 @@
 import { ServiceDetailsCard } from "./components/serviceDetailsCard";
 import { Component } from "solid-js";
 import { createStore } from "solid-js/store";
-import { NavigationBar } from "src/components/navigationBar";
-import { ContainerConfiguration } from "src/types";
 import { Container } from "styled-system/jsx";
+import { NavigationBar } from "~/components";
+import { ContainerConfiguration } from "~/types";
 
 export const AdminServicesNew: Component = () => {
   const [configuration, setConfiguration] = createStore<ContainerConfiguration>(
@@ -27,7 +27,7 @@ export const AdminServicesNew: Component = () => {
   return (
     <>
       <NavigationBar />
-      <Container p="12" maxW="4xl">
+      <Container p="12" maxW="4xl" overflowX="scroll">
         <ServiceDetailsCard
           containerConfiguration={configuration}
           setContainerConfiguration={setConfiguration}

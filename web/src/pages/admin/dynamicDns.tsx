@@ -7,17 +7,18 @@ import {
   createResource,
   createSignal,
 } from "solid-js";
-import { NavigationBar } from "src/components/navigationBar";
-import { Alert } from "src/components/ui/alert";
-import { Button } from "src/components/ui/button";
-import { Card } from "src/components/ui/card";
-import { Field } from "src/components/ui/field";
-import { Spinner } from "src/components/ui/spinner";
-import { Text } from "src/components/ui/text";
-import { useRouter } from "src/contexts/router";
-import { createAsyncAction } from "src/hooks/createAsyncAction";
-import { createBackendClient } from "src/hooks/createBackendClient";
 import { Container, HStack, VStack } from "styled-system/jsx";
+import { Alert } from "~/components";
+import { Button } from "~/components";
+import { Card } from "~/components";
+import { Field } from "~/components";
+import { Input } from "~/components";
+import { NavigationBar } from "~/components";
+import { Spinner } from "~/components";
+import { Text } from "~/components";
+import { useRouter } from "~/contexts/router";
+import { createAsyncAction } from "~/hooks/createAsyncAction";
+import { createBackendClient } from "~/hooks/createBackendClient";
 
 export const DynamicDns: Component = () => {
   const adminClient = createBackendClient("admin");
@@ -70,7 +71,7 @@ export const DynamicDns: Component = () => {
   return (
     <>
       <NavigationBar />
-      <Container p="12" maxW="md">
+      <Container p="12" maxW="md" overflowX="scroll">
         <VStack gap="6">
           <Show when={error()}>
             <Alert.Root borderColor="red.default">
@@ -105,12 +106,12 @@ export const DynamicDns: Component = () => {
               </Card.Header>
               <Card.Body>
                 <VStack gap="4">
-                  <Text size="md">
+                  <Text textStyle="md">
                     Only GoDaddy is supported as a provider at this time.
                   </Text>
                   <Field.Root width="full">
                     <Field.Label>API Key</Field.Label>
-                    <Field.Input
+                    <Input
                       onChange={(event) => setApiKey(event.target.value)}
                       value={apiKey()}
                       type="password"
@@ -118,7 +119,7 @@ export const DynamicDns: Component = () => {
                   </Field.Root>
                   <Field.Root width="full">
                     <Field.Label>API Secret</Field.Label>
-                    <Field.Input
+                    <Input
                       onChange={(event) => setApiSecret(event.target.value)}
                       value={apiSecret()}
                       type="password"

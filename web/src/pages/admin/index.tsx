@@ -6,11 +6,11 @@ import {
   ServerCog,
 } from "lucide-solid";
 import { Component } from "solid-js";
-import { NavigationBar } from "src/components/navigationBar";
-import { Button } from "src/components/ui/button";
-import { Card } from "src/components/ui/card";
-import { useRouter } from "src/contexts/router";
 import { Container, HStack, VStack } from "styled-system/jsx";
+import { Button } from "~/components";
+import { Card } from "~/components";
+import { NavigationBar } from "~/components";
+import { useRouter } from "~/contexts/router";
 
 export const AdminIndex: Component = () => {
   const { navigate } = useRouter();
@@ -18,8 +18,13 @@ export const AdminIndex: Component = () => {
   return (
     <VStack gap="16">
       <NavigationBar />
-      <Container px="12" pb="12" maxW="2xl">
-        <HStack gap="6" flexWrap="wrap" justifyContent="space-evenly">
+      <Container px="12" pb="12" maxW="2xl" overflowX="scroll">
+        <HStack
+          gap="6"
+          flexWrap="wrap"
+          justifyContent="space-evenly"
+          alignItems="stretch"
+        >
           <Card.Root width="2xs">
             <Card.Header>
               <Card.Title>Users</Card.Title>

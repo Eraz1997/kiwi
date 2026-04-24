@@ -1,12 +1,12 @@
 import { ArrowRight, Plus } from "lucide-solid";
 import { Component, For, Show, createResource } from "solid-js";
-import { NavigationBar } from "src/components/navigationBar";
-import { Button } from "src/components/ui/button";
-import { Table } from "src/components/ui/table";
-import { useRouter } from "src/contexts/router";
-import { createBackendClient } from "src/hooks/createBackendClient";
-import { Service } from "src/types";
 import { Container } from "styled-system/jsx";
+import { Button } from "~/components";
+import { NavigationBar } from "~/components";
+import { Table } from "~/components";
+import { useRouter } from "~/contexts/router";
+import { createBackendClient } from "~/hooks/createBackendClient";
+import { Service } from "~/types";
 
 export const AdminServices: Component = () => {
   const { navigate } = useRouter();
@@ -27,7 +27,7 @@ export const AdminServices: Component = () => {
   return (
     <>
       <NavigationBar />
-      <Container p="12" maxW="4xl">
+      <Container p="12" maxW="4xl" overflowX="scroll">
         <Table.Root>
           <Table.Head>
             <Table.Row>
