@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::net::{Ipv4Addr, SocketAddrV4, TcpListener};
-use std::process::Command;
 
 use crate::error::Error;
 use crate::managers::container::models::Log;
@@ -25,7 +24,7 @@ use chrono::NaiveDateTime;
 use futures::TryStreamExt;
 use futures::stream::StreamExt;
 use models::ContainerConfiguration;
-use uuid::Uuid;
+use reqwest::header::CONTENT_TYPE;
 
 pub mod error;
 pub mod models;
@@ -263,9 +262,13 @@ impl ContainerManager {
     pub async fn get_container_status(&self, name: &str) -> Result<String, Error> {
         let status = self
             .get_container_status_enum(name)
-            .await?
-            .map(|status| status.to_string())
-            .unwrap_or("Unknown".to_string());
+            .await
+            .map(|status| {
+                status
+                    .map(|status| status.to_string())
+                    .unwrap_or("Unknown".to_string())
+            })
+            .unwrap_or("Not running or unhealthy".to_string());
         Ok(status)
     }
 
@@ -290,16 +293,17 @@ impl ContainerManager {
 
     pub async fn stop_and_remove_container(&self, name: &str) -> Result<(), Error> {
         self.detach_and_remove_any_network(name).await?;
-        let status = self.get_container_status_enum(name).await?;
+        let status = self.get_container_status_enum(name).await;
 
         match status {
-            Some(ContainerSummaryStateEnum::CREATED)
-            | Some(ContainerSummaryStateEnum::RUNNING)
-            | Some(ContainerSummaryStateEnum::RESTARTING) => {
+            Ok(Some(ContainerSummaryStateEnum::CREATED))
+            | Ok(Some(ContainerSummaryStateEnum::RUNNING))
+            | Ok(Some(ContainerSummaryStateEnum::RESTARTING)) => {
                 self.client
                     .stop_container(name, None::<StopContainerOptions>)
                     .await?;
             }
+            Err(_) => return Ok(()),
             _ => {}
         }
 
@@ -404,18 +408,17 @@ impl ContainerManager {
     }
 
     pub async fn load_image_tarball(&self, tarball: Vec<u8>) -> Result<(), Error> {
-        let tarball_path = std::env::temp_dir().join(format!("kiwi-image-{}.tar", Uuid::new_v4()));
-        std::fs::write(&tarball_path, tarball)?;
+        let client = reqwest::Client::builder()
+            .unix_socket("/var/run/docker.sock")
+            .build()?;
+        let response = client
+            .post("http://localhost/images/load")
+            .header(CONTENT_TYPE, "application/x-tar")
+            .body(tarball)
+            .send()
+            .await?;
 
-        let output = Command::new("docker")
-            .arg("load")
-            .arg("-i")
-            .arg(&tarball_path)
-            .output()?;
-
-        let _ = std::fs::remove_file(&tarball_path);
-
-        if output.status.success() {
+        if response.status().is_success() {
             Ok(())
         } else {
             Err(Error::could_not_load_docker_image())
