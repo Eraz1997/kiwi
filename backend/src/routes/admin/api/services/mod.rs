@@ -109,6 +109,9 @@ async fn create_service(
             container_manager
                 .start_container(&service.container_configuration)
                 .await?;
+            container_manager
+                .create_and_attach_network_for_container(&service.container_configuration)
+                .await?;
             Ok(())
         }
         Err(error) => {

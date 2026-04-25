@@ -88,12 +88,26 @@ async fn main() -> Result<(), Error> {
 
     let services = db_manager.get_services_data().await?;
     for service in services {
-        container_manager
+        if let Err(error) = container_manager
             .start_container(&service.container_configuration)
-            .await?;
-        container_manager
+            .await
+        {
+            tracing::error!(
+                "failed to start container {}: {}",
+                service.container_configuration.name,
+                error
+            );
+        }
+        if let Err(error) = container_manager
             .create_and_attach_network_for_container(&service.container_configuration)
-            .await?;
+            .await
+        {
+            tracing::error!(
+                "failed to create and attack network for container {}: {}",
+                service.container_configuration.name,
+                error
+            );
+        }
     }
     secrets_manager
         .set_lets_encrypt_credentials(lets_encrypt_manager.lock().await.get_credentials())

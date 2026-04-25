@@ -65,6 +65,9 @@ async fn deploy_service(
     container_manager
         .start_container(&new_container_configuration)
         .await?;
+    container_manager
+        .create_and_attach_network_for_container(&new_container_configuration)
+        .await?;
 
     Ok(())
 }
