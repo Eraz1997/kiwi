@@ -3,6 +3,7 @@ export * as Avatar from "./avatar";
 export * from "./button";
 export * as Card from "./card";
 export * as Clipboard from "./clipboard";
+export * as Checkbox from "./checkbox";
 export * as Dialog from "./dialog";
 export * as Field from "./field";
 export * from "./heading";

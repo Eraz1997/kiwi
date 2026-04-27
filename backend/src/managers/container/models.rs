@@ -87,7 +87,7 @@ impl Display for GithubRepository {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ContainerConfiguration {
     pub name: String,
-    pub image_name: String,
+    pub image_name: Option<String>,
     pub image_sha: ImageSha,
     pub exposed_port: ExposedPort,
     pub environment_variables: Vec<EnvironmentVariable>,
@@ -105,7 +105,7 @@ impl ContainerConfiguration {
     ) -> Result<Self, Error> {
         Ok(Self {
             name: "kiwi-postgres".to_string(),
-            image_name: "postgres".to_string(),
+            image_name: Some("postgres".to_string()),
             image_sha: ImageSha::new(
                 "bcb90dc18910057ff49ce2ea157d8a0d534964090d39af959df41083f18c3318".to_string(),
             )?, // 17.5-alpine3.22
@@ -134,7 +134,7 @@ impl ContainerConfiguration {
     pub fn get_redis_configuration(admin_password: &str) -> Result<Self, Error> {
         Ok(Self {
             name: "kiwi-redis".to_string(),
-            image_name: "bitnami/redis".to_string(),
+            image_name: Some("bitnami/redis".to_string()),
             image_sha: ImageSha::new(
                 "d0f84da5011d75e3cda5516646ceb4ce6fa1eac50014c7090472af1f5ae80c91".to_string(),
             )?, // 8.0.2

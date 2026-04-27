@@ -16,7 +16,7 @@ import {
 import { Component, For, Match, Show, Switch, createSignal } from "solid-js";
 import { SetStoreFunction } from "solid-js/store";
 import { HStack, VStack } from "styled-system/jsx";
-import { Alert } from "~/components";
+import { Alert, Checkbox } from "~/components";
 import { Button } from "~/components";
 import { Card } from "~/components";
 import { Field } from "~/components";
@@ -38,15 +38,16 @@ type Props = {
 export const ServiceDetailsCard: Component<Props> = (props) => {
   const isNameValid = () =>
     !!props.containerConfiguration.name.match("^[a-zA-Z0-9-_]{3,32}$");
+  const isImageNameValid = () => props.containerConfiguration.image_name !== "";
   const isShaValid = () =>
     !!props.containerConfiguration.image_sha.value.match("^[0-9a-f]{64}$");
   const isConfigurationValid = () =>
     isNameValid() &&
+    isImageNameValid() &&
     isShaValid() &&
     ![
       props.containerConfiguration.exposed_port.internal,
       props.containerConfiguration.exposed_port.external,
-      props.containerConfiguration.image_name,
     ].find((field) => !field);
 
   const [error, setError] = createSignal<string>();
@@ -187,7 +188,8 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
                         event.target.value,
                       )
                     }
-                    value={props.containerConfiguration.image_name}
+                    value={props.containerConfiguration.image_name ?? ""}
+                    disabled={props.containerConfiguration.image_name === null}
                   />
                 </Field.Root>
                 <Field.Root
@@ -211,6 +213,23 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
                   <Field.ErrorText>Please enter a valid Sha</Field.ErrorText>
                 </Field.Root>
               </HStack>
+              <Checkbox.Root
+                checked={props.containerConfiguration.image_name === null}
+                onCheckedChange={(event) =>
+                  props.setContainerConfiguration(
+                    "image_name",
+                    event.checked === true ? null : "",
+                  )
+                }
+              >
+                <Checkbox.HiddenInput />
+                <Checkbox.Control>
+                  <Checkbox.Indicator />
+                </Checkbox.Control>
+                <Checkbox.Label>
+                  I don't have a registry, I will directly push image tarballs
+                </Checkbox.Label>
+              </Checkbox.Root>
             </VStack>
             <VStack gap="4" alignItems="start" width="full">
               <Heading textStyle="md" display="flex" gap="2">

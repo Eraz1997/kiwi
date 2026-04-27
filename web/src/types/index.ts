@@ -13,7 +13,7 @@ type GithubRepository = { name: string; owner: string };
 
 export type ContainerConfiguration = {
   name: string;
-  image_name: string;
+  image_name: string | null;
   image_sha: { value: string };
   exposed_port: { internal: number; external: number };
   environment_variables: EnvironmentVariable[];

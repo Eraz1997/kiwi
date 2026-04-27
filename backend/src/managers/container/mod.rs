@@ -150,26 +150,35 @@ impl ContainerManager {
             }
         }
 
-        let image_tag = format!(
-            "{}@sha256:{}",
-            configuration.image_name,
-            configuration.image_sha.get_value()
-        );
+        let is_remote_image = configuration.image_name.is_some();
+        let image_tag = if let Some(image_name) = &configuration.image_name {
+            format!(
+                "{}@sha256:{}",
+                image_name,
+                configuration.image_sha.get_value()
+            )
+        } else {
+            format!("sha256:{}", configuration.image_sha.get_value())
+        };
 
-        let create_image_options = CreateImageOptionsBuilder::new()
-            .from_image(&image_tag)
-            .build();
-        let mut image_pull_stream =
-            self.client
-                .create_image(Some(create_image_options), None, None);
+        if is_remote_image {
+            let create_image_options = CreateImageOptionsBuilder::new()
+                .from_image(&image_tag)
+                .build();
+            let mut image_pull_stream =
+                self.client
+                    .create_image(Some(create_image_options), None, None);
 
-        tracing::info!("started pulling image {}", image_tag);
+            tracing::info!("started pulling image {}", image_tag);
 
-        while let Some(pull_result) = image_pull_stream.next().await {
-            pull_result?;
+            while let Some(pull_result) = image_pull_stream.next().await {
+                pull_result?;
+            }
+
+            tracing::info!("pulled image {}", image_tag);
+        } else {
+            tracing::info!("skipped pulling image {} as it's local", image_tag);
         }
-
-        tracing::info!("pulled image {}", image_tag);
 
         let options = CreateContainerOptionsBuilder::new()
             .name(&configuration.name)
