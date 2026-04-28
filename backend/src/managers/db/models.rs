@@ -101,8 +101,7 @@ impl TryFrom<Row> for ServiceData {
                         value: format!(
                             "postgresql://{}:{}@kiwi-postgres:5432/{}",
                             postgres_username, postgres_password, postgres_username
-                        )
-                        .to_lowercase(),
+                        ),
                     },
                     EnvironmentVariable {
                         name: "KIWI_REDIS_URI".to_string(),

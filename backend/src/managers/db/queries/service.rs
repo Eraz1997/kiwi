@@ -112,7 +112,7 @@ impl DbManager {
         let service = ServiceData::try_from(service_row)?;
 
         let query_string = format!(
-            "CREATE ROLE {} NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT LOGIN ENCRYPTED PASSWORD '{}'",
+            "CREATE ROLE \"{}\" NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT LOGIN ENCRYPTED PASSWORD '{}'",
             postgres_username, postgres_password
         );
         let statement = transaction.prepare_cached(&query_string).await?;
@@ -120,7 +120,7 @@ impl DbManager {
         transaction.commit().await?;
 
         let query_string = format!(
-            "CREATE DATABASE {} WITH OWNER {}",
+            "CREATE DATABASE \"{}\" WITH OWNER \"{}\"",
             postgres_username, postgres_username
         );
         let statement = client.prepare_cached(&query_string).await?;
@@ -142,17 +142,15 @@ impl DbManager {
             .await?;
         transaction.execute(&statement, &[name]).await?;
 
-        let query_string = format!("DROP ROLE {}", postgres_username);
+        let query_string = format!("DROP ROLE \"{}\"", postgres_username);
         let statement = transaction.prepare_cached(&query_string).await?;
-        transaction
-            .execute(&statement, &[postgres_username])
-            .await?;
+        transaction.execute(&statement, &[]).await?;
 
         transaction.commit().await?;
 
-        let query_string = format!("DROP DATABASE {} FORCE", postgres_username);
+        let query_string = format!("DROP DATABASE \"{}\" FORCE", postgres_username);
         let statement = client.prepare_cached(&query_string).await?;
-        client.execute(&statement, &[postgres_username]).await?;
+        client.execute(&statement, &[]).await?;
 
         Ok(())
     }

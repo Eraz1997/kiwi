@@ -189,6 +189,9 @@ async fn edit_service(
     container_manager
         .start_container(&updated_service.container_configuration)
         .await?;
+    container_manager
+        .create_and_attach_network_for_container(&updated_service.container_configuration)
+        .await?;
     container_manager.prune_unused_images().await?;
 
     Ok(())
