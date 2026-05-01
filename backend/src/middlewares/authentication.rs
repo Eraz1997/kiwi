@@ -83,12 +83,16 @@ pub async fn authentication_middleware(
     let redirect_uri_prefix = format!("https://auth.{}", domain);
 
     match (required_role, access_token, access_token_item) {
-        (Some(required_role), Some(_), Ok(Some(access_token_item))) => {
+        (required_role, Some(_), Ok(Some(access_token_item))) => {
             let user_id_string = access_token_item.user_id.to_string();
 
-            if !access_token_item.role.has_permissions(&required_role) {
-                Error::bad_permissions().into_response()
-            } else if let (Ok(user_id_header_value), Ok(username_header_value)) = (
+            if let Some(required_role) = required_role
+                && !access_token_item.role.has_permissions(&required_role)
+            {
+                return Error::bad_permissions().into_response();
+            }
+
+            if let (Ok(user_id_header_value), Ok(username_header_value)) = (
                 HeaderValue::from_str(&user_id_string),
                 HeaderValue::from_str(&access_token_item.username),
             ) {
@@ -110,14 +114,14 @@ pub async fn authentication_middleware(
             );
             Redirect::to(&redirect_uri).into_response()
         }
-        (Some(_), Some(_), Ok(None)) => {
+        (_, Some(_), Ok(None)) => {
             let redirect_uri = format!(
                 "{}/api/refresh-credentials?return_uri={}",
                 redirect_uri_prefix, encoded_original_uri
             );
             Redirect::temporary(&redirect_uri).into_response()
         }
-        (None, _, Ok(_)) => next.run(request).await,
+        (None, None, Ok(_)) => next.run(request).await,
         (_, _, Err(error)) => error.into_response(),
     }
 }

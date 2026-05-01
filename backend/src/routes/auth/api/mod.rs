@@ -246,7 +246,6 @@ fn auth_cookie<'a>(name: String, value: String) -> Cookie<'a> {
 
     cookie.set_http_only(true);
     cookie.set_max_age(Some(CREDENTIALS_DURATION));
-    cookie.set_same_site(SameSite::Strict);
     cookie.set_secure(true);
 
     cookie
@@ -306,14 +305,17 @@ fn set_auth_cookies(
     let mut access_token_cookie = auth_cookie(ACCESS_TOKEN_COOKIE_NAME.to_string(), access_token);
     access_token_cookie.set_domain(domain_without_port);
     access_token_cookie.set_path("/");
+    access_token_cookie.set_same_site(SameSite::Strict);
 
     let mut refresh_token_cookie =
         auth_cookie(REFRESH_TOKEN_COOKIE_NAME.to_string(), refresh_token.clone());
     refresh_token_cookie.set_path("/api/refresh-credentials");
+    refresh_token_cookie.set_same_site(SameSite::None);
 
     let mut logout_refresh_token_cookie =
         auth_cookie(LOGOUT_REFRESH_TOKEN_COPY_NAME.to_string(), refresh_token);
     logout_refresh_token_cookie.set_path("/api/logout");
+    logout_refresh_token_cookie.set_same_site(SameSite::Strict);
 
     cookie_jar
         .add(access_token_cookie)
@@ -333,16 +335,19 @@ fn erase_cookies_and_redirect_to_login(
     access_token_cookie.set_domain(domain_without_port);
     access_token_cookie.set_path("/");
     access_token_cookie.set_max_age(Duration::ZERO);
+    access_token_cookie.set_same_site(SameSite::Strict);
 
     let mut refresh_token_cookie =
         auth_cookie(REFRESH_TOKEN_COOKIE_NAME.to_string(), "".to_string());
     refresh_token_cookie.set_path("/api/refresh-credentials");
     refresh_token_cookie.set_max_age(Duration::ZERO);
+    refresh_token_cookie.set_same_site(SameSite::None);
 
     let mut logout_refresh_token_cookie =
         auth_cookie(LOGOUT_REFRESH_TOKEN_COPY_NAME.to_string(), "".to_string());
     logout_refresh_token_cookie.set_path("/api/logout");
     logout_refresh_token_cookie.set_max_age(Duration::ZERO);
+    logout_refresh_token_cookie.set_same_site(SameSite::Strict);
 
     let cookie_jar = cookie_jar
         .add(access_token_cookie)
