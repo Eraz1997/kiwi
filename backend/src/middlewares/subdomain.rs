@@ -5,7 +5,7 @@ use axum::{
 use hyper::body::Incoming;
 
 pub fn subdomain_middleware(mut request: Request<Incoming>) -> Request<Incoming> {
-    let subdomain = request
+    let mut subdomain = request
         .uri()
         .authority()
         .map(|host| host.to_string())
@@ -32,6 +32,12 @@ pub fn subdomain_middleware(mut request: Request<Incoming>) -> Request<Incoming>
     let uri_parts = request.uri().clone().into_parts();
 
     let requested_path_and_query = if let Some(path_and_query) = request.uri().path_and_query() {
+        if path_and_query
+            .as_str()
+            .starts_with("/api/refresh-credentials")
+        {
+            subdomain = Some("auth".to_string());
+        }
         path_and_query.as_str()
     } else {
         ""

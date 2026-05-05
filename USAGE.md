@@ -55,7 +55,9 @@ Moreover, each HTTP request is added the following headers
 - `X-Kiwi-Username`, containing the username of the user in case they're authenticated. The header is omitted otherwise.
 
 > [!IMPORTANT]
-> To make sure authentication tokens are correctly refreshed by Kiwi when using your application, `fetch` calls should be set `credentials: "include"`. The refresh token won't be sent otherwise.
+> The following endpoint is reserved for Kiwi authentication to work properly:
+> - `/api/refresh-credentials`
+> Any endpoint exposed by your application matching this path will be ignored and overridden.
 
 ### CI and Deployment 🧑‍🚀
 

@@ -11,7 +11,7 @@ use urlencoding::encode;
 use crate::{
     constants::{ACCESS_TOKEN_COOKIE_NAME, KIWI_USER_ID_HEADER_NAME, KIWI_USERNAME_HEADER_NAME},
     error::Error,
-    extractors::{Domain, FullOriginalUri},
+    extractors::{Domain, DomainAndSubdomain, FullOriginalUri},
     managers::{
         db::DbManager,
         redis::{RedisManager, models::RedisServiceAuthorisation},
@@ -24,6 +24,7 @@ pub async fn authentication_middleware(
     redis_manager: Extension<RedisManager>,
     cookie_jar: CookieJar,
     Domain(domain): Domain,
+    DomainAndSubdomain(domain_and_subdomain): DomainAndSubdomain,
     FullOriginalUri(original_uri): FullOriginalUri,
     mut request: Request,
     next: Next,
@@ -80,7 +81,6 @@ pub async fn authentication_middleware(
 
     let original_uri = original_uri.to_string();
     let encoded_original_uri = encode(&original_uri);
-    let redirect_uri_prefix = format!("https://auth.{}", domain);
 
     match (required_role, access_token, access_token_item) {
         (required_role, Some(_), Ok(Some(access_token_item))) => {
@@ -109,17 +109,21 @@ pub async fn authentication_middleware(
         }
         (Some(_), None, Ok(_)) => {
             let redirect_uri = format!(
-                "{}/login?return_uri={}",
-                redirect_uri_prefix, encoded_original_uri
+                "https://auth.{}/login?return_uri={}",
+                domain, encoded_original_uri
             );
             Redirect::to(&redirect_uri).into_response()
         }
         (_, Some(_), Ok(None)) => {
-            let redirect_uri = format!(
-                "{}/api/refresh-credentials?return_uri={}",
-                redirect_uri_prefix, encoded_original_uri
-            );
-            Redirect::temporary(&redirect_uri).into_response()
+            if service == "auth" {
+                next.run(request).await
+            } else {
+                let redirect_uri = format!(
+                    "https://{}/api/refresh-credentials?return_uri={}",
+                    domain_and_subdomain, encoded_original_uri
+                );
+                Redirect::temporary(&redirect_uri).into_response()
+            }
         }
         (None, None, Ok(_)) => next.run(request).await,
         (_, _, Err(error)) => error.into_response(),

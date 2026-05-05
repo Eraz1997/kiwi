@@ -29,4 +29,11 @@ impl Error {
             message: "network name not found".to_string(),
         }
     }
+
+    pub fn cannot_delete_container(name: &str) -> Self {
+        Self {
+            code: StatusCode::INTERNAL_SERVER_ERROR,
+            message: format!("cannot delete container {}", name),
+        }
+    }
 }

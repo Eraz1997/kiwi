@@ -23,6 +23,21 @@ where
     }
 }
 
+pub struct DomainAndSubdomain(pub String);
+
+impl<State> FromRequestParts<State> for DomainAndSubdomain
+where
+    State: Send + Sync,
+{
+    type Rejection = (StatusCode, String);
+
+    async fn from_request_parts(parts: &mut Parts, _: &State) -> Result<Self, Self::Rejection> {
+        let host_value =
+            get_host(parts).ok_or((StatusCode::BAD_REQUEST, "missing host header".to_string()))?;
+        Ok(DomainAndSubdomain(host_value))
+    }
+}
+
 pub struct FullOriginalUri(pub String);
 
 impl<State> FromRequestParts<State> for FullOriginalUri

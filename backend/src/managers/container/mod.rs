@@ -25,6 +25,7 @@ use futures::TryStreamExt;
 use futures::stream::StreamExt;
 use models::ContainerConfiguration;
 use reqwest::header::CONTENT_TYPE;
+use tokio::time::{Duration, sleep};
 
 pub mod error;
 pub mod models;
@@ -73,10 +74,7 @@ impl ContainerManager {
                     }
                     _ => {}
                 }
-                let remove_options = RemoveContainerOptionsBuilder::new().force(true).build();
-                client
-                    .remove_container(container_id.as_str(), Some(remove_options))
-                    .await?;
+                remove_container(&client, container_id.as_str()).await?;
             }
             tracing::info!(
                 "reset docker status: stopped and removed {} containers",
@@ -316,8 +314,7 @@ impl ContainerManager {
             _ => {}
         }
 
-        let options = RemoveContainerOptionsBuilder::new().force(true).build();
-        self.client.remove_container(name, Some(options)).await?;
+        remove_container(&self.client, name).await?;
 
         Ok(())
     }
@@ -433,4 +430,25 @@ impl ContainerManager {
             Err(Error::could_not_load_docker_image())
         }
     }
+}
+
+async fn remove_container(client: &Docker, name_or_id: &str) -> Result<(), Error> {
+    for _ in 0..5 {
+        let options = RemoveContainerOptionsBuilder::new().force(true).build();
+        match client.remove_container(name_or_id, Some(options)).await {
+            Ok(_)
+            | Err(bollard::errors::Error::DockerResponseServerError {
+                status_code: 404,
+                message: _,
+            }) => return Ok(()),
+            Err(bollard::errors::Error::DockerResponseServerError {
+                status_code: 409,
+                message: _,
+            }) => {}
+            Err(error) => return Err(error.into()),
+        };
+        tracing::info!("waiting for container {} to be deleted", name_or_id);
+        sleep(Duration::from_secs(2)).await;
+    }
+    Err(Error::cannot_delete_container(name_or_id))
 }

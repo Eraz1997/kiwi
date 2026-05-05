@@ -241,12 +241,14 @@ async fn get_sealing_key(
     }
 }
 
-fn auth_cookie<'a>(name: String, value: String) -> Cookie<'a> {
+fn auth_cookie<'a>(name: String, value: String, domain_without_port: &str) -> Cookie<'a> {
     let mut cookie = Cookie::new(name, value);
 
     cookie.set_http_only(true);
     cookie.set_max_age(Some(CREDENTIALS_DURATION));
     cookie.set_secure(true);
+    cookie.set_same_site(SameSite::Strict);
+    cookie.set_domain(domain_without_port.to_string());
 
     cookie
 }
@@ -302,20 +304,26 @@ fn set_auth_cookies(
     let domain_parts: Vec<String> = domain.split(":").map(|value| value.to_string()).collect();
     let domain_without_port = format!(".{}", domain_parts[0]);
 
-    let mut access_token_cookie = auth_cookie(ACCESS_TOKEN_COOKIE_NAME.to_string(), access_token);
-    access_token_cookie.set_domain(domain_without_port);
+    let mut access_token_cookie = auth_cookie(
+        ACCESS_TOKEN_COOKIE_NAME.to_string(),
+        access_token,
+        &domain_without_port,
+    );
     access_token_cookie.set_path("/");
-    access_token_cookie.set_same_site(SameSite::Strict);
 
-    let mut refresh_token_cookie =
-        auth_cookie(REFRESH_TOKEN_COOKIE_NAME.to_string(), refresh_token.clone());
+    let mut refresh_token_cookie = auth_cookie(
+        REFRESH_TOKEN_COOKIE_NAME.to_string(),
+        refresh_token.clone(),
+        &domain_without_port,
+    );
     refresh_token_cookie.set_path("/api/refresh-credentials");
-    refresh_token_cookie.set_same_site(SameSite::None);
 
-    let mut logout_refresh_token_cookie =
-        auth_cookie(LOGOUT_REFRESH_TOKEN_COPY_NAME.to_string(), refresh_token);
+    let mut logout_refresh_token_cookie = auth_cookie(
+        LOGOUT_REFRESH_TOKEN_COPY_NAME.to_string(),
+        refresh_token,
+        &domain_without_port,
+    );
     logout_refresh_token_cookie.set_path("/api/logout");
-    logout_refresh_token_cookie.set_same_site(SameSite::Strict);
 
     cookie_jar
         .add(access_token_cookie)
@@ -331,23 +339,29 @@ fn erase_cookies_and_redirect_to_login(
     let domain_parts: Vec<String> = domain.split(":").map(|value| value.to_string()).collect();
     let domain_without_port = format!(".{}", domain_parts[0]);
 
-    let mut access_token_cookie = auth_cookie(ACCESS_TOKEN_COOKIE_NAME.to_string(), "".to_string());
-    access_token_cookie.set_domain(domain_without_port);
+    let mut access_token_cookie = auth_cookie(
+        ACCESS_TOKEN_COOKIE_NAME.to_string(),
+        "".to_string(),
+        &domain_without_port,
+    );
     access_token_cookie.set_path("/");
     access_token_cookie.set_max_age(Duration::ZERO);
-    access_token_cookie.set_same_site(SameSite::Strict);
 
-    let mut refresh_token_cookie =
-        auth_cookie(REFRESH_TOKEN_COOKIE_NAME.to_string(), "".to_string());
+    let mut refresh_token_cookie = auth_cookie(
+        REFRESH_TOKEN_COOKIE_NAME.to_string(),
+        "".to_string(),
+        &domain_without_port,
+    );
     refresh_token_cookie.set_path("/api/refresh-credentials");
     refresh_token_cookie.set_max_age(Duration::ZERO);
-    refresh_token_cookie.set_same_site(SameSite::None);
 
-    let mut logout_refresh_token_cookie =
-        auth_cookie(LOGOUT_REFRESH_TOKEN_COPY_NAME.to_string(), "".to_string());
+    let mut logout_refresh_token_cookie = auth_cookie(
+        LOGOUT_REFRESH_TOKEN_COPY_NAME.to_string(),
+        "".to_string(),
+        &domain_without_port,
+    );
     logout_refresh_token_cookie.set_path("/api/logout");
     logout_refresh_token_cookie.set_max_age(Duration::ZERO);
-    logout_refresh_token_cookie.set_same_site(SameSite::Strict);
 
     let cookie_jar = cookie_jar
         .add(access_token_cookie)

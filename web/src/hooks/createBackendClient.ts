@@ -29,7 +29,6 @@ export const createBackendClient = (service: Service): BackendClient => {
       method,
       body: body ? JSON.stringify(body) : undefined,
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
     });
 
     let jsonPayload, text;
