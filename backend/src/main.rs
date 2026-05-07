@@ -14,6 +14,7 @@ use crate::server::Server;
 use crate::settings::Settings;
 use crate::worker::Worker;
 use axum::extract::DefaultBodyLimit;
+use axum::http::{HeaderValue, header};
 use axum::{Extension, middleware};
 use clap::Parser;
 use managers::container::ContainerManager;
@@ -24,6 +25,7 @@ use routes::create_router;
 use tokio::select;
 use tokio::sync::Mutex;
 use tower_http::cors::CorsLayer;
+use tower_http::set_header::SetResponseHeaderLayer;
 use tower_http::trace::TraceLayer;
 
 mod constants;
@@ -124,10 +126,24 @@ async fn main() -> Result<(), Error> {
         );
     }
 
+    let content_security_policy = if settings.is_development() {
+        "frame-ancestors 'none'; connect-src 'self' http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*"
+    } else {
+        "frame-ancestors 'none';"
+    };
+
     let app = create_router(&settings)
         .layer(TraceLayer::new_for_http())
+        .layer(SetResponseHeaderLayer::overriding(
+            header::STRICT_TRANSPORT_SECURITY,
+            HeaderValue::from_static("max-age=63072000; includeSubDomains; preload"),
+        ))
+        .layer(SetResponseHeaderLayer::overriding(
+            header::CONTENT_SECURITY_POLICY,
+            HeaderValue::from_str(content_security_policy).map_err(|_| Error::serialisation())?,
+        ))
         .layer(DefaultBodyLimit::disable())
-        .layer(CorsLayer::very_permissive())
+        .layer(CorsLayer::new())
         .layer(middleware::from_fn(authentication_middleware))
         .layer(Extension(db_manager))
         .layer(Extension(container_manager))
