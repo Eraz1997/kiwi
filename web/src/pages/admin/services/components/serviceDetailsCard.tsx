@@ -154,7 +154,12 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
               <RadioGroup.Root
                 defaultValue="None"
                 onValueChange={(event) => {
-                  const requiredRole = event.value ? Role.Customer : null;
+                  const value = event.value as Role;
+                  const requiredRole = [Role.Admin, Role.Customer].includes(
+                    value,
+                  )
+                    ? value
+                    : null;
                   props.setContainerConfiguration(
                     "required_role",
                     requiredRole,
