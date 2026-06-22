@@ -8,7 +8,6 @@ use models::LoginRequest;
 use regex::Regex;
 use time::Duration;
 use urlencoding::decode;
-use zxcvbn::{Score, zxcvbn};
 
 use crate::constants::{
     ACCESS_TOKEN_COOKIE_NAME, LOGOUT_REFRESH_TOKEN_COPY_NAME, REFRESH_TOKEN_COOKIE_NAME,
@@ -50,11 +49,6 @@ async fn create_user(
     let username_regex = Regex::new(r"^[a-zA-Z0-9.-_]{6,32}$")?;
     if !username_regex.is_match(&payload.username) {
         return Err(Error::invalid_username());
-    }
-
-    let password_score = zxcvbn(&payload.password_hash, &[&payload.username]);
-    if password_score.score() != Score::Four {
-        return Err(Error::invalid_password());
     }
 
     let password_hash = crypto_manager.generate_hash(&payload.password_hash)?;
@@ -155,7 +149,8 @@ async fn refresh_credentials(
         .and_then(|uri_domain| uri_domain.split("/").next())
         .ok_or(Error::bad_return_uri())?
         .to_string();
-    if !return_uri_domain.ends_with(&domain) {
+    let subdomain_suffix = format!(".{}", domain);
+    if !return_uri_domain.ends_with(&subdomain_suffix) {
         return Err(Error::bad_return_uri());
     }
 

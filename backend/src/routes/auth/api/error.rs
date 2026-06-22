@@ -8,11 +8,4 @@ impl Error {
             message: "invalid username".to_string(),
         }
     }
-
-    pub fn invalid_password() -> Self {
-        Self {
-            code: StatusCode::BAD_REQUEST,
-            message: "invalid password".to_string(),
-        }
-    }
 }
