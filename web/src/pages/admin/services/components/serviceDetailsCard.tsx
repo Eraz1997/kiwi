@@ -152,7 +152,7 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
                 Authorisation <ScanFace />
               </Heading>
               <RadioGroup.Root
-                defaultValue="None"
+                defaultValue={props.containerConfiguration.required_role}
                 onValueChange={(event) => {
                   const value = event.value as Role;
                   const requiredRole = [Role.Admin, Role.Customer].includes(
