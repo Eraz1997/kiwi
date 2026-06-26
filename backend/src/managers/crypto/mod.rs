@@ -5,6 +5,8 @@ use argon2::{
 
 use crate::error::Error;
 
+mod error;
+
 #[derive(Clone)]
 pub struct CryptoManager {
     pepper: String,
@@ -19,6 +21,7 @@ impl CryptoManager {
     }
 
     pub fn generate_hash(&self, clear_text: &str) -> Result<String, Error> {
+        self.validate_text_length(clear_text)?;
         let hasher = self.get_hasher()?;
         let salt = SaltString::generate(&mut OsRng);
         let password_hash = hasher.hash_password(clear_text.as_bytes(), &salt)?;
@@ -26,6 +29,7 @@ impl CryptoManager {
     }
 
     pub fn matches(&self, clear_text: &str, hashed_text: &str) -> Result<bool, Error> {
+        self.validate_text_length(clear_text)?;
         let hasher = self.get_hasher()?;
         let password_hash = PasswordHash::new(hashed_text)?;
         let matches = hasher
@@ -41,5 +45,12 @@ impl CryptoManager {
             argon2::Version::V0x13,
             Params::DEFAULT,
         )?)
+    }
+
+    fn validate_text_length(&self, text: &str) -> Result<(), Error> {
+        if text.len() > 128 {
+            return Err(Error::text_is_too_long());
+        }
+        Ok(())
     }
 }

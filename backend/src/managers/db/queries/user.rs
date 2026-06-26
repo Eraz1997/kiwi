@@ -105,7 +105,7 @@ impl DbManager {
         let mut client = self.connection_pool.get().await?;
         let transaction = client.transaction().await?;
         let statement = transaction
-            .prepare_cached("SELECT id, role FROM user_invitations WHERE id = $1")
+            .prepare_cached("SELECT id, role FROM user_invitations WHERE id = $1 FOR UPDATE")
             .await?;
         let invitation: Option<UserInvitation> = transaction
             .query_opt(&statement, &[&invitation_id])
