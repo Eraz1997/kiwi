@@ -1,6 +1,5 @@
 use axum::{
-    Extension,
-    extract::Request,
+    extract::{Request, State},
     http::HeaderValue,
     middleware::Next,
     response::{IntoResponse, Redirect, Response},
@@ -12,16 +11,13 @@ use crate::{
     constants::{ACCESS_TOKEN_COOKIE_NAME, KIWI_USER_ID_HEADER_NAME, KIWI_USERNAME_HEADER_NAME},
     error::Error,
     extractors::{Domain, DomainAndSubdomain, FullOriginalUri},
-    managers::{
-        db::DbManager,
-        redis::{RedisManager, models::RedisServiceAuthorisation},
-    },
+    managers::redis::models::RedisServiceAuthorisation,
     models::UserRole,
+    state::AppState,
 };
 
 pub async fn authentication_middleware(
-    db_manager: Extension<DbManager>,
-    redis_manager: Extension<RedisManager>,
+    State(state): State<AppState>,
     cookie_jar: CookieJar,
     Domain(domain): Domain,
     DomainAndSubdomain(domain_and_subdomain): DomainAndSubdomain,
@@ -43,15 +39,16 @@ pub async fn authentication_middleware(
     let required_role = if service == "admin" {
         Some(UserRole::Admin)
     } else {
-        match redis_manager.get_service_authorisation(service).await {
+        match state.redis_manager.get_service_authorisation(service).await {
             Ok(Some(RedisServiceAuthorisation {
                 service_name: _,
                 required_role,
             })) => required_role,
-            Ok(None) => match db_manager.get_service_data(service).await {
+            Ok(None) => match state.db_manager.get_service_data(service).await {
                 Ok(Some(service_data)) => {
                     let required_role = service_data.container_configuration.required_role;
-                    if let Err(error) = redis_manager
+                    if let Err(error) = state
+                        .redis_manager
                         .store_service_authorisation(service, required_role.clone())
                         .await
                     {
@@ -74,7 +71,10 @@ pub async fn authentication_middleware(
         .map(|cookie| cookie.value().to_owned());
 
     let access_token_item = if let Some(access_token) = access_token.clone() {
-        redis_manager.get_access_token_item(&access_token).await
+        state
+            .redis_manager
+            .get_access_token_item(&access_token)
+            .await
     } else {
         Ok(None)
     };

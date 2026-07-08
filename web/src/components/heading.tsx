@@ -7,5 +7,5 @@ type TextProps = TextVariantProps & { as?: JSX.Element };
 
 export type HeadingProps = ComponentProps<typeof Heading>;
 export const Heading = styled("h2", text, {
-  defaultProps: { variant: "heading" },
+	defaultProps: { variant: "heading" },
 }) as StyledComponent<"h2", TextProps>;

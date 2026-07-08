@@ -1,3 +1,5 @@
+import { type Component, Match, Switch } from "solid-js";
+import { Box } from "styled-system/jsx/box";
 import { useRouter } from "./contexts/router";
 import { Certificates } from "./pages/admin/certificates";
 import { DynamicDns } from "./pages/admin/dynamicDns";
@@ -10,49 +12,47 @@ import { CreateUser } from "./pages/auth/createUser";
 import { Login } from "./pages/auth/login";
 import { Logout } from "./pages/auth/logout";
 import { NotFound } from "./pages/internal/notFound";
-import { Component, Match, Switch } from "solid-js";
-import { Box } from "styled-system/jsx/box";
 
 export const App: Component = () => {
-  const { currentPage } = useRouter();
+	const { currentPage } = useRouter();
 
-  return (
-    <Box class="light">
-      <Switch>
-        <Match when={currentPage() === "auth/create-user"}>
-          <CreateUser />
-        </Match>
-        <Match when={currentPage() === "auth/login"}>
-          <Login />
-        </Match>
-        <Match when={currentPage() === "auth/logout"}>
-          <Logout />
-        </Match>
-        <Match when={currentPage() === "admin"}>
-          <AdminIndex />
-        </Match>
-        <Match when={currentPage() === "admin/users"}>
-          <AdminUsers />
-        </Match>
-        <Match when={currentPage() === "admin/services"}>
-          <AdminServices />
-        </Match>
-        <Match when={currentPage() === "admin/services/new"}>
-          <AdminServicesNew />
-        </Match>
-        <Match when={currentPage() === "admin/services/edit"}>
-          <AdminServicesEdit />
-        </Match>
-        <Match when={currentPage() === "admin/dynamic-dns"}>
-          <DynamicDns />
-        </Match>
-        <Match when={currentPage() === "admin/certificates"}>
-          <Certificates />
-        </Match>
-        <Match when={currentPage() === "internal/not-found"}>
-          <NotFound />
-        </Match>
-      </Switch>
-    </Box>
-  );
+	return (
+		<Box class="light">
+			<Switch>
+				<Match when={currentPage() === "auth/create-user"}>
+					<CreateUser />
+				</Match>
+				<Match when={currentPage() === "auth/login"}>
+					<Login />
+				</Match>
+				<Match when={currentPage() === "auth/logout"}>
+					<Logout />
+				</Match>
+				<Match when={currentPage() === "admin"}>
+					<AdminIndex />
+				</Match>
+				<Match when={currentPage() === "admin/users"}>
+					<AdminUsers />
+				</Match>
+				<Match when={currentPage() === "admin/services"}>
+					<AdminServices />
+				</Match>
+				<Match when={currentPage() === "admin/services/new"}>
+					<AdminServicesNew />
+				</Match>
+				<Match when={currentPage() === "admin/services/edit"}>
+					<AdminServicesEdit />
+				</Match>
+				<Match when={currentPage() === "admin/dynamic-dns"}>
+					<DynamicDns />
+				</Match>
+				<Match when={currentPage() === "admin/certificates"}>
+					<Certificates />
+				</Match>
+				<Match when={currentPage() === "internal/not-found"}>
+					<NotFound />
+				</Match>
+			</Switch>
+		</Box>
+	);
 };

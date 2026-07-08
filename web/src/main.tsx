@@ -5,10 +5,10 @@ import "./index.css";
 import { render } from "solid-js/web";
 
 render(
-  () => (
-    <RouterProvider>
-      <App />
-    </RouterProvider>
-  ),
-  document.getElementById("root") as HTMLElement,
+	() => (
+		<RouterProvider>
+			<App />
+		</RouterProvider>
+	),
+	document.getElementById("root") as HTMLElement,
 );

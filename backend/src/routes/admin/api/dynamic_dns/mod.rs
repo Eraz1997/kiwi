@@ -1,22 +1,21 @@
-use std::sync::Arc;
-
 use axum::{
-    Extension, Json, Router,
+    Json, Router,
+    extract::State,
     routing::{delete, get, put},
 };
-use tokio::sync::Mutex;
 
 use crate::{
     error::Error,
-    managers::{dynamic_dns::DynamicDnsManager, secrets::SecretsManager},
+    managers::dynamic_dns::DynamicDnsManager,
     routes::admin::api::dynamic_dns::models::{
         EnableDynamicDnsConfigurationRequest, GetDynamicDnsConfigurationResponse,
     },
+    state::AppState,
 };
 
 mod models;
 
-pub fn create_router() -> Router {
+pub fn create_router() -> Router<AppState> {
     Router::new()
         .route("/", get(get_dynamic_dns_configuration))
         .route("/", put(enable_dynamic_dns))
@@ -24,24 +23,24 @@ pub fn create_router() -> Router {
 }
 
 async fn get_dynamic_dns_configuration(
-    Extension(dynamic_dns_manager): Extension<Arc<Mutex<Option<DynamicDnsManager>>>>,
+    State(state): State<AppState>,
 ) -> Json<GetDynamicDnsConfigurationResponse> {
     Json(GetDynamicDnsConfigurationResponse {
-        enabled: dynamic_dns_manager.lock().await.is_some(),
+        enabled: state.dynamic_dns_manager.lock().await.is_some(),
     })
 }
 
 async fn enable_dynamic_dns(
-    Extension(dynamic_dns_manager): Extension<Arc<Mutex<Option<DynamicDnsManager>>>>,
-    Extension(secrets_manager): Extension<Arc<Mutex<SecretsManager>>>,
+    State(state): State<AppState>,
     Json(payload): Json<EnableDynamicDnsConfigurationRequest>,
 ) -> Result<(), Error> {
     let new_dynamic_dns_manager = DynamicDnsManager::new(&payload).await?;
 
-    let mut dynamic_dns_manager = dynamic_dns_manager.lock().await;
+    let mut dynamic_dns_manager = state.dynamic_dns_manager.lock().await;
     *dynamic_dns_manager = Some(new_dynamic_dns_manager);
 
-    secrets_manager
+    state
+        .secrets_manager
         .lock()
         .await
         .set_dynamic_dns_api_configuration(Some(payload))
@@ -50,14 +49,12 @@ async fn enable_dynamic_dns(
     Ok(())
 }
 
-async fn disable_dynamic_dns(
-    Extension(dynamic_dns_manager): Extension<Arc<Mutex<Option<DynamicDnsManager>>>>,
-    Extension(secrets_manager): Extension<Arc<Mutex<SecretsManager>>>,
-) -> Result<(), Error> {
-    let mut dynamic_dns_manager = dynamic_dns_manager.lock().await;
+async fn disable_dynamic_dns(State(state): State<AppState>) -> Result<(), Error> {
+    let mut dynamic_dns_manager = state.dynamic_dns_manager.lock().await;
     *dynamic_dns_manager = None;
 
-    secrets_manager
+    state
+        .secrets_manager
         .lock()
         .await
         .set_dynamic_dns_api_configuration(None)

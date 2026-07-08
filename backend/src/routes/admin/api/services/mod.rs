@@ -3,22 +3,20 @@ use std::collections::HashSet;
 use crate::error::Error;
 use crate::managers::container::ContainerManager;
 use crate::managers::container::models::ContainerConfiguration;
-use crate::managers::redis::RedisManager;
 use crate::managers::secrets::models::Secret;
 use crate::routes::admin::api::services::models::{
     GetLogsQuery, GetLogsResponse, GetServiceResponse, GetServicesResponse,
 };
-use axum::extract::{Path, Query};
+use crate::state::AppState;
+use axum::extract::{Path, Query, State};
 use axum::routing::{delete, get, post, put};
-use axum::{Extension, Json, Router};
+use axum::{Json, Router};
 use regex::Regex;
-
-use crate::managers::db::DbManager;
 
 mod error;
 mod models;
 
-pub fn create_router() -> Router {
+pub fn create_router() -> Router<AppState> {
     Router::new()
         .route("/", get(get_services))
         .route("/{name}", get(get_service))
@@ -28,10 +26,9 @@ pub fn create_router() -> Router {
         .route("/{name}", put(edit_service))
 }
 
-async fn get_services(
-    Extension(db_manager): Extension<DbManager>,
-) -> Result<Json<GetServicesResponse>, Error> {
-    let services = db_manager
+async fn get_services(State(state): State<AppState>) -> Result<Json<GetServicesResponse>, Error> {
+    let services = state
+        .db_manager
         .get_services_data()
         .await?
         .into_iter()
@@ -41,16 +38,16 @@ async fn get_services(
 }
 
 async fn get_service(
-    Extension(container_manager): Extension<ContainerManager>,
-    Extension(db_manager): Extension<DbManager>,
+    State(state): State<AppState>,
     Path(name): Path<String>,
 ) -> Result<Json<GetServiceResponse>, Error> {
-    let service = db_manager
+    let service = state
+        .db_manager
         .get_service_data(&name)
         .await?
         .ok_or(Error::container_not_found())?
         .with_redacted_internal_secrets();
-    let status = container_manager.get_container_status(&name).await?;
+    let status = state.container_manager.get_container_status(&name).await?;
 
     Ok(Json(GetServiceResponse {
         general_info: service,
@@ -59,11 +56,12 @@ async fn get_service(
 }
 
 async fn get_logs(
-    Extension(container_manager): Extension<ContainerManager>,
+    State(state): State<AppState>,
     Path(name): Path<String>,
     Query(GetLogsQuery { from_date, to_date }): Query<GetLogsQuery>,
 ) -> Result<Json<GetLogsResponse>, Error> {
-    let logs = container_manager
+    let logs = state
+        .container_manager
         .get_container_logs(&name, from_date, to_date)
         .await?;
 
@@ -71,9 +69,7 @@ async fn get_logs(
 }
 
 async fn create_service(
-    Extension(container_manager): Extension<ContainerManager>,
-    Extension(db_manager): Extension<DbManager>,
-    Extension(redis_manager): Extension<RedisManager>,
+    State(state): State<AppState>,
     Json(payload): Json<ContainerConfiguration>,
 ) -> Result<(), Error> {
     if !ContainerManager::is_local_port_free(&payload.exposed_port.external) {
@@ -90,11 +86,16 @@ async fn create_service(
     let redis_username = Secret::default().get();
     let redis_password = Secret::default().get();
 
-    redis_manager
+    state
+        .redis_manager
         .create_user(&redis_username, &redis_password)
         .await?;
-    redis_manager.purge_service_port(&payload.name).await?;
-    let service = db_manager
+    state
+        .redis_manager
+        .purge_service_port(&payload.name)
+        .await?;
+    let service = state
+        .db_manager
         .create_service(
             &payload,
             &postgres_username,
@@ -106,42 +107,49 @@ async fn create_service(
 
     match service {
         Ok(service) => {
-            container_manager
+            state
+                .container_manager
                 .start_container(&service.container_configuration)
                 .await?;
-            container_manager
+            state
+                .container_manager
                 .create_and_attach_network_for_container(&service.container_configuration)
                 .await?;
             Ok(())
         }
         Err(error) => {
-            redis_manager.delete_user(&redis_username).await?;
+            state.redis_manager.delete_user(&redis_username).await?;
             Err(error)
         }
     }
 }
 
 async fn delete_service(
-    Extension(container_manager): Extension<ContainerManager>,
-    Extension(db_manager): Extension<DbManager>,
-    Extension(redis_manager): Extension<RedisManager>,
+    State(state): State<AppState>,
     Path(name): Path<String>,
 ) -> Result<(), Error> {
-    let service = db_manager
+    let service = state
+        .db_manager
         .get_service_data(&name)
         .await?
         .ok_or(Error::container_not_found())?;
 
-    container_manager.stop_and_remove_container(&name).await?;
-    container_manager
+    state
+        .container_manager
+        .stop_and_remove_container(&name)
+        .await?;
+    state
+        .container_manager
         .remove_volumes(&service.container_configuration)
         .await?;
-    container_manager.prune_unused_images().await?;
-    redis_manager
+    state.container_manager.prune_unused_images().await?;
+    state
+        .redis_manager
         .delete_user(&service.internal_configuration.redis_username)
         .await?;
-    redis_manager.purge_service_port(&name).await?;
-    db_manager
+    state.redis_manager.purge_service_port(&name).await?;
+    state
+        .db_manager
         .delete_service(&name, &service.internal_configuration.postgres_username)
         .await?;
 
@@ -149,12 +157,12 @@ async fn delete_service(
 }
 
 async fn edit_service(
-    Extension(container_manager): Extension<ContainerManager>,
-    Extension(db_manager): Extension<DbManager>,
+    State(state): State<AppState>,
     Path(previous_name): Path<String>,
     Json(payload): Json<ContainerConfiguration>,
 ) -> Result<(), Error> {
-    let service = db_manager
+    let service = state
+        .db_manager
         .get_service_data(&previous_name)
         .await?
         .ok_or(Error::container_not_found())?;
@@ -166,9 +174,10 @@ async fn edit_service(
         return Err(Error::inconsistent_port());
     }
 
-    let updated_service = db_manager.update_service(&service, &payload).await?;
+    let updated_service = state.db_manager.update_service(&service, &payload).await?;
 
-    container_manager
+    state
+        .container_manager
         .stop_and_remove_container(&previous_name)
         .await?;
 
@@ -182,17 +191,20 @@ async fn edit_service(
         .collect();
     let mut configuration_with_volumes_to_remove = service.container_configuration.clone();
     configuration_with_volumes_to_remove.stateful_volume_paths = volumes_to_remove;
-    container_manager
+    state
+        .container_manager
         .remove_volumes(&configuration_with_volumes_to_remove)
         .await?;
 
-    container_manager
+    state
+        .container_manager
         .start_container(&updated_service.container_configuration)
         .await?;
-    container_manager
+    state
+        .container_manager
         .create_and_attach_network_for_container(&updated_service.container_configuration)
         .await?;
-    container_manager.prune_unused_images().await?;
+    state.container_manager.prune_unused_images().await?;
 
     Ok(())
 }

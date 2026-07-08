@@ -1,6 +1,6 @@
 use axum::{
-    Extension, Router,
-    extract::{Path, Request},
+    Router,
+    extract::{Path, Request, State},
     response::Response,
     routing::any,
 };
@@ -10,6 +10,7 @@ use crate::{
     error::Error,
     managers::{db::DbManager, local_http::LocalHttpManager, redis::RedisManager},
     settings::Settings,
+    state::AppState,
 };
 
 pub mod admin;
@@ -18,7 +19,7 @@ pub mod ci;
 mod error;
 pub mod status;
 
-pub fn create_router(settings: &Settings) -> Router {
+pub fn create_router(settings: &Settings) -> Router<AppState> {
     Router::new()
         .nest("/admin", admin::create_router(settings))
         .nest("/auth", auth::create_router(settings))
@@ -29,16 +30,14 @@ pub fn create_router(settings: &Settings) -> Router {
 }
 
 async fn forward_to_service_root(
-    Extension(redis_manager): Extension<RedisManager>,
-    Extension(db_manager): Extension<DbManager>,
-    Extension(local_http_manager): Extension<LocalHttpManager>,
+    State(state): State<AppState>,
     Path(service): Path<String>,
     request: Request,
 ) -> Result<Response<Body>, Error> {
     forward_to_service_shared(
-        redis_manager,
-        db_manager,
-        local_http_manager,
+        state.redis_manager,
+        state.db_manager,
+        state.local_http_manager,
         service,
         "/".to_string(),
         request,
@@ -47,16 +46,14 @@ async fn forward_to_service_root(
 }
 
 async fn forward_to_service(
-    Extension(redis_manager): Extension<RedisManager>,
-    Extension(db_manager): Extension<DbManager>,
-    Extension(local_http_manager): Extension<LocalHttpManager>,
+    State(state): State<AppState>,
     Path((service, path)): Path<(String, String)>,
     request: Request,
 ) -> Result<Response<Body>, Error> {
     forward_to_service_shared(
-        redis_manager,
-        db_manager,
-        local_http_manager,
+        state.redis_manager,
+        state.db_manager,
+        state.local_http_manager,
         service,
         path,
         request,

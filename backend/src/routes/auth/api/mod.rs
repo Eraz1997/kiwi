@@ -1,7 +1,7 @@
-use axum::extract::Query;
+use axum::extract::{Query, State};
 use axum::response::Redirect;
 use axum::routing::{any, get, post};
-use axum::{Extension, Json, Router};
+use axum::{Json, Router};
 use axum_extra::extract::CookieJar;
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use models::LoginRequest;
@@ -14,8 +14,6 @@ use crate::constants::{
 };
 use crate::error::Error;
 use crate::extractors::Domain;
-use crate::managers::crypto::CryptoManager;
-use crate::managers::db::DbManager;
 use crate::managers::redis::RedisManager;
 use crate::managers::redis::models::{RedisRefreshToken, RedisRefreshTokenKind};
 use crate::managers::secrets::models::Secret;
@@ -24,12 +22,13 @@ use crate::routes::auth::api::constants::CREDENTIALS_DURATION;
 use crate::routes::auth::api::models::{
     CreateUserRequest, GetSealingKeyResponse, RefreshCredentialsQuery,
 };
+use crate::state::AppState;
 
 mod constants;
 mod error;
 mod models;
 
-pub fn create_router() -> Router {
+pub fn create_router() -> Router<AppState> {
     Router::new()
         .route("/create-user", post(create_user))
         .route("/login", post(login))
@@ -41,9 +40,7 @@ pub fn create_router() -> Router {
 async fn create_user(
     cookie_jar: CookieJar,
     Domain(domain): Domain,
-    crypto_manager: Extension<CryptoManager>,
-    Extension(db_manager): Extension<DbManager>,
-    Extension(redis_manager): Extension<RedisManager>,
+    State(state): State<AppState>,
     Json(payload): Json<CreateUserRequest>,
 ) -> Result<CookieJar, Error> {
     let username_regex = Regex::new(r"^[a-zA-Z0-9.-_]{6,32}$")?;
@@ -51,8 +48,9 @@ async fn create_user(
         return Err(Error::invalid_username());
     }
 
-    let password_hash = crypto_manager.generate_hash(&payload.password_hash)?;
-    let user_data = db_manager
+    let password_hash = state.crypto_manager.generate_hash(&payload.password_hash)?;
+    let user_data = state
+        .db_manager
         .create_user_from_invitation(&payload.invitation_id, &payload.username, &password_hash)
         .await?
         .ok_or(Error::bad_credentials())?;
@@ -62,7 +60,7 @@ async fn create_user(
     generate_and_store_tokens(
         cookie_jar,
         domain,
-        redis_manager,
+        state.redis_manager,
         user_data.id,
         user_data.username,
         sealing_key,
@@ -75,17 +73,17 @@ async fn create_user(
 async fn login(
     cookie_jar: CookieJar,
     Domain(domain): Domain,
-    crypto_manager: Extension<CryptoManager>,
-    Extension(db_manager): Extension<DbManager>,
-    Extension(redis_manager): Extension<RedisManager>,
+    State(state): State<AppState>,
     Json(payload): Json<LoginRequest>,
 ) -> Result<CookieJar, Error> {
-    let user_data = db_manager
+    let user_data = state
+        .db_manager
         .get_user_data(&payload.username)
         .await?
         .ok_or(Error::bad_credentials())?;
-    let valid_password =
-        crypto_manager.matches(&payload.password_hash, &user_data.password_hash)?;
+    let valid_password = state
+        .crypto_manager
+        .matches(&payload.password_hash, &user_data.password_hash)?;
 
     if !valid_password {
         Err(Error::bad_credentials())?
@@ -96,7 +94,7 @@ async fn login(
     generate_and_store_tokens(
         cookie_jar,
         domain,
-        redis_manager,
+        state.redis_manager,
         user_data.id,
         user_data.username,
         sealing_key,
@@ -109,7 +107,7 @@ async fn login(
 async fn logout(
     cookie_jar: CookieJar,
     Domain(domain): Domain,
-    Extension(redis_manager): Extension<RedisManager>,
+    State(state): State<AppState>,
 ) -> Result<CookieJar, Error> {
     let refresh_token = cookie_jar
         .get(LOGOUT_REFRESH_TOKEN_COPY_NAME)
@@ -117,7 +115,10 @@ async fn logout(
 
     match refresh_token {
         Some(refresh_token) => {
-            redis_manager.erase_refresh_token(&refresh_token).await?;
+            state
+                .redis_manager
+                .erase_refresh_token(&refresh_token)
+                .await?;
             let (cookie_jar, _) = erase_cookies_and_redirect_to_login(cookie_jar, None, domain);
             Ok(cookie_jar)
         }
@@ -128,7 +129,7 @@ async fn logout(
 async fn refresh_credentials(
     cookie_jar: CookieJar,
     Domain(domain): Domain,
-    Extension(redis_manager): Extension<RedisManager>,
+    State(state): State<AppState>,
     payload: Query<RefreshCredentialsQuery>,
 ) -> Result<(CookieJar, Redirect), Error> {
     let refresh_token = cookie_jar
@@ -136,7 +137,10 @@ async fn refresh_credentials(
         .map(|cookie| cookie.value().to_owned());
 
     let refresh_token_item = if let Some(refresh_token) = refresh_token.clone() {
-        redis_manager.get_refresh_token_item(&refresh_token).await
+        state
+            .redis_manager
+            .get_refresh_token_item(&refresh_token)
+            .await
     } else {
         Ok(None)
     };
@@ -165,7 +169,7 @@ async fn refresh_credentials(
             let cookie_jar = generate_and_store_tokens(
                 cookie_jar,
                 domain,
-                redis_manager,
+                state.redis_manager,
                 data.user_id,
                 data.username,
                 data.sealing_key,
@@ -182,7 +186,8 @@ async fn refresh_credentials(
                 kind: RedisRefreshTokenKind::Refreshed(data),
             })),
         ) => {
-            let new_refresh_token_item = redis_manager
+            let new_refresh_token_item = state
+                .redis_manager
                 .get_refresh_token_item(&data.fresh_refresh_token)
                 .await?;
             if new_refresh_token_item.is_some() {
@@ -212,14 +217,17 @@ async fn refresh_credentials(
 
 async fn get_sealing_key(
     cookie_jar: CookieJar,
-    Extension(redis_manager): Extension<RedisManager>,
+    State(state): State<AppState>,
 ) -> Result<Json<GetSealingKeyResponse>, Error> {
     let access_token = cookie_jar
         .get(ACCESS_TOKEN_COOKIE_NAME)
         .map(|cookie| cookie.value().to_owned());
 
     let access_token_item = if let Some(access_token) = access_token.clone() {
-        redis_manager.get_access_token_item(&access_token).await
+        state
+            .redis_manager
+            .get_access_token_item(&access_token)
+            .await
     } else {
         Ok(None)
     }?;

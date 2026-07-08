@@ -1,44 +1,38 @@
 use axum::{
-    Extension, Json, Router,
-    extract::{Multipart, Path},
+    Json, Router,
+    extract::{Multipart, Path, State},
     routing::post,
 };
 
 use crate::{
     error::Error,
-    managers::{
-        container::{
-            ContainerManager,
-            models::{GithubRepository, ImageSha},
-        },
-        db::DbManager,
-        oidc::OidcManager,
-    },
+    managers::container::models::{GithubRepository, ImageSha},
     routes::ci::api::models::DeployServiceRequest,
+    state::AppState,
 };
 
 mod error;
 mod models;
 
-pub fn create_router() -> Router {
+pub fn create_router() -> Router<AppState> {
     Router::new()
         .route("/deploy/{service_name}", post(deploy_service))
         .route("/push-tarball", post(push_tarball))
 }
 
 async fn deploy_service(
-    Extension(oidc_manager): Extension<OidcManager>,
-    Extension(container_manager): Extension<ContainerManager>,
-    Extension(db_manager): Extension<DbManager>,
+    State(state): State<AppState>,
     Path(service_name): Path<String>,
     Json(payload): Json<DeployServiceRequest>,
 ) -> Result<(), Error> {
-    let service_data = db_manager
+    let service_data = state
+        .db_manager
         .get_service_data(&service_name)
         .await?
         .ok_or(Error::service_not_found())?;
 
-    let token = oidc_manager
+    let token = state
+        .oidc_manager
         .validate_github_oidc_token(&payload.oidc_token)
         .await?;
     let github_repo = GithubRepository::try_from(token.repository)?;
@@ -56,16 +50,20 @@ async fn deploy_service(
     let image_sha = payload.image_sha.trim_start_matches("sha256:").to_string();
     new_container_configuration.image_sha = ImageSha::new(image_sha)?;
 
-    db_manager
+    state
+        .db_manager
         .update_service(&service_data, &new_container_configuration)
         .await?;
-    container_manager
+    state
+        .container_manager
         .stop_and_remove_container(&service_name)
         .await?;
-    container_manager
+    state
+        .container_manager
         .start_container(&new_container_configuration)
         .await?;
-    container_manager
+    state
+        .container_manager
         .create_and_attach_network_for_container(&new_container_configuration)
         .await?;
 
@@ -73,9 +71,7 @@ async fn deploy_service(
 }
 
 async fn push_tarball(
-    Extension(oidc_manager): Extension<OidcManager>,
-    Extension(container_manager): Extension<ContainerManager>,
-    Extension(db_manager): Extension<DbManager>,
+    State(state): State<AppState>,
     mut multipart: Multipart,
 ) -> Result<(), Error> {
     let mut oidc_token: Option<String> = None;
@@ -115,14 +111,17 @@ async fn push_tarball(
         return Err(Error::invalid_ci_payload("tarball cannot be empty"));
     }
 
-    let token = oidc_manager.validate_github_oidc_token(&oidc_token).await?;
+    let token = state
+        .oidc_manager
+        .validate_github_oidc_token(&oidc_token)
+        .await?;
     let github_repo = GithubRepository::try_from(token.repository)?;
 
     if token.reference != "refs/heads/main" {
         return Err(Error::invalid_branch());
     }
 
-    let services = db_manager.get_services_data().await?;
+    let services = state.db_manager.get_services_data().await?;
     let is_authorised_repo = services.iter().any(|service| {
         service
             .container_configuration
@@ -134,7 +133,7 @@ async fn push_tarball(
         return Err(Error::invalid_repo_for_service());
     }
 
-    container_manager.load_image_tarball(tarball).await?;
+    state.container_manager.load_image_tarball(tarball).await?;
 
     Ok(())
 }

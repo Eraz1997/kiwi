@@ -1,59 +1,60 @@
 import { useRouter } from "~/contexts/router";
 
 type ParsedResponse = {
-  statusCode: number;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  jsonPayload: any | null;
-  text: string | null;
+	statusCode: number;
+	// biome-ignore lint/suspicious/noExplicitAny: response body can be of any type
+	jsonPayload: any | null;
+	text: string | null;
 };
 
 type Service = "auth" | "admin";
 
 type BackendClient = {
-  get: (path: string) => Promise<ParsedResponse>;
-  post: (path: string, body?: unknown) => Promise<ParsedResponse>;
-  put: (path: string, body?: unknown) => Promise<ParsedResponse>;
-  delete: (path: string, body?: unknown) => Promise<ParsedResponse>;
+	get: (path: string) => Promise<ParsedResponse>;
+	post: (path: string, body?: unknown) => Promise<ParsedResponse>;
+	put: (path: string, body?: unknown) => Promise<ParsedResponse>;
+	delete: (path: string, body?: unknown) => Promise<ParsedResponse>;
 };
 
 export const createBackendClient = (service: Service): BackendClient => {
-  const { domain } = useRouter();
-  const baseUrl = () => `https://${service}.${domain()}/api`;
+	const { domain } = useRouter();
+	const baseUrl = () => `https://${service}.${domain()}/api`;
 
-  const request = async (
-    path: string,
-    method: string,
-    body?: unknown,
-  ): Promise<ParsedResponse> => {
-    const response = await fetch(`${baseUrl()}${path}`, {
-      method,
-      body: body ? JSON.stringify(body) : undefined,
-      headers: { "Content-Type": "application/json" },
-    });
+	const request = async (
+		path: string,
+		method: string,
+		body?: unknown,
+	): Promise<ParsedResponse> => {
+		const response = await fetch(`${baseUrl()}${path}`, {
+			method,
+			body: body ? JSON.stringify(body) : undefined,
+			headers: { "Content-Type": "application/json" },
+		});
 
-    let jsonPayload, text;
-    try {
-      jsonPayload = await response.clone().json();
-    } catch {
-      jsonPayload = null;
-    }
-    try {
-      text = await response.text();
-    } catch {
-      text = null;
-    }
+		// biome-ignore lint/suspicious/noImplicitAnyLet: response body can be of any type
+		let jsonPayload, text;
+		try {
+			jsonPayload = await response.clone().json();
+		} catch {
+			jsonPayload = null;
+		}
+		try {
+			text = await response.text();
+		} catch {
+			text = null;
+		}
 
-    return {
-      statusCode: response.status,
-      jsonPayload,
-      text,
-    };
-  };
+		return {
+			statusCode: response.status,
+			jsonPayload,
+			text,
+		};
+	};
 
-  return {
-    get: async (path) => await request(path, "GET"),
-    post: async (path, body) => await request(path, "POST", body),
-    put: async (path, body) => await request(path, "PUT", body),
-    delete: async (path, body) => await request(path, "DELETE", body),
-  };
+	return {
+		get: async (path) => await request(path, "GET"),
+		post: async (path, body) => await request(path, "POST", body),
+		put: async (path, body) => await request(path, "PUT", body),
+		delete: async (path, body) => await request(path, "DELETE", body),
+	};
 };

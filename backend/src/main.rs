@@ -12,10 +12,11 @@ use crate::managers::secrets::SecretsManager;
 use crate::models::ServerAction;
 use crate::server::Server;
 use crate::settings::Settings;
+use crate::state::AppState;
 use crate::worker::Worker;
 use axum::extract::DefaultBodyLimit;
 use axum::http::{HeaderValue, header};
-use axum::{Extension, middleware};
+use axum::middleware;
 use clap::Parser;
 use managers::container::ContainerManager;
 use managers::container::models::ContainerConfiguration;
@@ -39,6 +40,7 @@ mod routes;
 mod server;
 mod services;
 mod settings;
+mod state;
 mod worker;
 
 #[tokio::main]
@@ -132,6 +134,18 @@ async fn main() -> Result<(), Error> {
         "frame-ancestors 'none';"
     };
 
+    let state = AppState {
+        db_manager,
+        container_manager,
+        crypto_manager,
+        redis_manager,
+        local_http_manager,
+        oidc_manager,
+        dynamic_dns_manager: dynamic_dns_manager.clone(),
+        secrets_manager: Arc::new(Mutex::new(secrets_manager)),
+        lets_encrypt_manager: lets_encrypt_manager.clone(),
+    };
+
     let app = create_router(&settings)
         .layer(TraceLayer::new_for_http())
         .layer(SetResponseHeaderLayer::overriding(
@@ -144,16 +158,11 @@ async fn main() -> Result<(), Error> {
         ))
         .layer(DefaultBodyLimit::disable())
         .layer(CorsLayer::new())
-        .layer(middleware::from_fn(authentication_middleware))
-        .layer(Extension(db_manager))
-        .layer(Extension(container_manager))
-        .layer(Extension(crypto_manager))
-        .layer(Extension(redis_manager))
-        .layer(Extension(local_http_manager))
-        .layer(Extension(oidc_manager))
-        .layer(Extension(dynamic_dns_manager.clone()))
-        .layer(Extension(Arc::new(Mutex::new(secrets_manager))))
-        .layer(Extension(lets_encrypt_manager.clone()));
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            authentication_middleware,
+        ))
+        .with_state(state);
 
     let server = Server::new(&settings);
     let worker = Worker::new(dynamic_dns_manager, lets_encrypt_manager);

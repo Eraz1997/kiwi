@@ -1,6 +1,7 @@
+use axum::extract::State;
 use axum::http::HeaderMap;
 use axum::routing::{delete, get, post};
-use axum::{Extension, Json, Router};
+use axum::{Json, Router};
 
 use crate::constants::KIWI_USER_ID_HEADER_NAME;
 use crate::error::Error;
@@ -9,11 +10,12 @@ use crate::routes::admin::api::users::models::{
     CreateUserInvitationRequest, CreateUserInvitationResponse, DeleteUserRequest, GetMeResponse,
     GetUsersResponse, User,
 };
+use crate::state::AppState;
 
 mod error;
 mod models;
 
-pub fn create_router() -> Router {
+pub fn create_router() -> Router<AppState> {
     Router::new()
         .route("/", get(get_users))
         .route("/", post(create_user_invitation))
@@ -21,10 +23,8 @@ pub fn create_router() -> Router {
         .route("/me", get(get_me))
 }
 
-async fn get_users(
-    Extension(db_manager): Extension<DbManager>,
-) -> Result<Json<GetUsersResponse>, Error> {
-    let users_data = db_manager.get_users_data().await?;
+async fn get_users(State(state): State<AppState>) -> Result<Json<GetUsersResponse>, Error> {
+    let users_data = state.db_manager.get_users_data().await?;
     let users: Vec<User> = users_data
         .into_iter()
         .map(|user_data| User {
@@ -37,33 +37,36 @@ async fn get_users(
 }
 
 async fn delete_user(
-    Extension(db_manager): Extension<DbManager>,
+    State(state): State<AppState>,
     headers: HeaderMap,
     Json(payload): Json<DeleteUserRequest>,
 ) -> Result<(), Error> {
-    let user = get_current_user(&db_manager, headers).await?;
+    let user = get_current_user(&state.db_manager, headers).await?;
     if user.username == payload.username {
         Err(Error::cannot_delete_active_user())
     } else {
-        db_manager.delete_user(&payload.username).await?;
+        state.db_manager.delete_user(&payload.username).await?;
         Ok(())
     }
 }
 
 async fn get_me(
-    Extension(db_manager): Extension<DbManager>,
+    State(state): State<AppState>,
     headers: HeaderMap,
 ) -> Result<Json<GetMeResponse>, Error> {
-    let user = get_current_user(&db_manager, headers).await?;
+    let user = get_current_user(&state.db_manager, headers).await?;
 
     Ok(Json(user))
 }
 
 async fn create_user_invitation(
-    Extension(db_manager): Extension<DbManager>,
+    State(state): State<AppState>,
     Json(payload): Json<CreateUserInvitationRequest>,
 ) -> Result<Json<CreateUserInvitationResponse>, Error> {
-    let user_invitation = db_manager.create_user_invitation(payload.role).await?;
+    let user_invitation = state
+        .db_manager
+        .create_user_invitation(payload.role)
+        .await?;
 
     Ok(Json(CreateUserInvitationResponse {
         invitation_id: user_invitation.id,
