@@ -70,7 +70,6 @@ Please note that only HTTPS is supported by the backend, and any attempt to acce
 
 ```sh
 pnpm lint
-pnpm format
 ```
 
 ### Backend 🎒
