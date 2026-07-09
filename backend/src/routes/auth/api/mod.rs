@@ -150,7 +150,7 @@ async fn refresh_credentials(
         .to_string();
     let return_uri_domain = decoded_return_uri
         .strip_prefix("https://")
-        .and_then(|uri_domain| uri_domain.split("/").next())
+        .and_then(|uri_domain| uri_domain.split(&['?', '/'][..]).next())
         .ok_or(Error::bad_return_uri())?
         .to_string();
     let subdomain_suffix = format!(".{}", domain);
