@@ -198,7 +198,9 @@ impl RedisManager {
             "ON".to_string(),
             format!(">{}", password),
             format!("~{}:*", username),
-            "+@read +@write +@string +@hash -@dangerous".to_string(),
+            "+@read".to_string(),
+            "+@write".to_string(),
+            "-@dangerous".to_string(),
         ];
         self.client.acl_setuser(username, rules).await?;
         Ok(())
