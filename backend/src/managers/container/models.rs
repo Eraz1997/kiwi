@@ -10,6 +10,7 @@ use crate::managers::db::constants::DATABASE_NAME;
 use crate::models::UserRole;
 
 #[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ImageSha {
     value: String,
 }
@@ -30,6 +31,7 @@ impl ImageSha {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ExposedPort {
     pub internal: u16,
     pub external: u16,
@@ -45,12 +47,14 @@ impl ExposedPort {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct EnvironmentVariable {
     pub name: String,
     pub value: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct GithubRepository {
     pub owner: String,
     pub name: String,
@@ -85,6 +89,7 @@ impl Display for GithubRepository {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ContainerConfiguration {
     pub name: String,
     pub image_name: Option<String>,
@@ -159,6 +164,7 @@ impl ContainerConfiguration {
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum LogType {
     Output,
     Error,
@@ -167,6 +173,7 @@ pub enum LogType {
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Log {
     pub log_type: LogType,
     pub message: String,

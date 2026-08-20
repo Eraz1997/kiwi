@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::error::Error;
 
 #[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct Secret {
     value: String,
 }
@@ -43,6 +44,7 @@ impl FromStr for Secret {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub enum DynamicDnsProvider {
     GoDaddy,
 }
@@ -56,6 +58,7 @@ impl fmt::Display for DynamicDnsProvider {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct DynamicDnsApiConfiguration {
     pub provider: DynamicDnsProvider,
     pub authorization_header: Secret,
@@ -63,6 +66,7 @@ pub struct DynamicDnsApiConfiguration {
 }
 
 #[derive(Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
 #[serde(default)]
 pub struct Secrets {
     pub crypto_pepper: Secret,

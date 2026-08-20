@@ -42,7 +42,7 @@ export const DynamicDns: Component = () => {
 				"/dynamic-dns",
 				{
 					provider: "GoDaddy",
-					authorization_header: {
+					authorizationHeader: {
 						value: `sso-key ${apiKey()}: ${apiSecret()}`,
 					},
 					domain: { value: domain() },

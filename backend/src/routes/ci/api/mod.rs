@@ -83,7 +83,7 @@ async fn push_tarball(
         .map_err(|_| Error::invalid_ci_payload("malformed multipart payload"))?
     {
         match field.name() {
-            Some("oidc_token") => {
+            Some("oidcToken") => {
                 oidc_token = Some(
                     field
                         .text()

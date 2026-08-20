@@ -47,12 +47,14 @@ impl TryFrom<Row> for UserInvitation {
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct InternalServiceConfiguration {
     pub redis_username: String,
     pub postgres_username: String,
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ServiceData {
     pub container_configuration: ContainerConfiguration,
     pub created_at: NaiveDateTime,

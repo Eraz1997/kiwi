@@ -22,8 +22,8 @@ import { createBackendClient } from "~/hooks/createBackendClient";
 
 type CertificateInfo = {
 	issuer: string;
-	expiration_date: string;
-	new_pending_order: boolean;
+	expirationDate: string;
+	newPendingOrder: boolean;
 };
 
 export const Certificates: Component = () => {
@@ -106,7 +106,7 @@ export const Certificates: Component = () => {
 									<Heading textStyle="md" display="flex" gap="2">
 										Expiration <CalendarClock />
 									</Heading>
-									<Text>{certificateInfo()?.expiration_date}</Text>
+									<Text>{certificateInfo()?.expirationDate}</Text>
 								</VStack>
 							</Card.Body>
 							<Card.Footer>
@@ -117,7 +117,7 @@ export const Certificates: Component = () => {
 											_hover: "amber.light.11",
 										}}
 										loading={isAnythingLoading()}
-										disabled={!certificateInfo()?.new_pending_order}
+										disabled={!certificateInfo()?.newPendingOrder}
 										onClick={verifyDns}
 									>
 										Verify DNS

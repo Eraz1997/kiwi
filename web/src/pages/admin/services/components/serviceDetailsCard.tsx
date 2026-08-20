@@ -48,16 +48,16 @@ type Props = {
 export const ServiceDetailsCard: Component<Props> = (props) => {
 	const isNameValid = () =>
 		!!props.containerConfiguration.name.match("^[a-zA-Z0-9-_]{3,32}$");
-	const isImageNameValid = () => props.containerConfiguration.image_name !== "";
+	const isImageNameValid = () => props.containerConfiguration.imageName !== "";
 	const isShaValid = () =>
-		!!props.containerConfiguration.image_sha.value.match("^[0-9a-f]{64}$");
+		!!props.containerConfiguration.imageSha.value.match("^[0-9a-f]{64}$");
 	const isConfigurationValid = () =>
 		isNameValid() &&
 		isImageNameValid() &&
 		isShaValid() &&
 		![
-			props.containerConfiguration.exposed_port.internal,
-			props.containerConfiguration.exposed_port.external,
+			props.containerConfiguration.exposedPort.internal,
+			props.containerConfiguration.exposedPort.external,
 		].find((field) => !field);
 
 	const [error, setError] = createSignal<string>();
@@ -162,7 +162,7 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
 								Authorisation <ScanFace />
 							</Heading>
 							<RadioGroup.Root
-								defaultValue={props.containerConfiguration.required_role}
+								defaultValue={props.containerConfiguration.requiredRole}
 								onValueChange={(event) => {
 									const value = event.value as Role;
 									const requiredRole = [Role.Admin, Role.Customer].includes(
@@ -170,10 +170,7 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
 									)
 										? value
 										: null;
-									props.setContainerConfiguration(
-										"required_role",
-										requiredRole,
-									);
+									props.setContainerConfiguration("requiredRole", requiredRole);
 								}}
 							>
 								<For each={[null, Role.Customer, Role.Admin]}>
@@ -199,17 +196,17 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
 									<Input
 										onChange={(event) =>
 											props.setContainerConfiguration(
-												"image_name",
+												"imageName",
 												event.target.value,
 											)
 										}
-										value={props.containerConfiguration.image_name ?? ""}
-										disabled={props.containerConfiguration.image_name === null}
+										value={props.containerConfiguration.imageName ?? ""}
+										disabled={props.containerConfiguration.imageName === null}
 									/>
 								</Field.Root>
 								<Field.Root
 									invalid={
-										!!props.containerConfiguration.image_sha.value &&
+										!!props.containerConfiguration.imageSha.value &&
 										!isShaValid()
 									}
 									width="full"
@@ -218,21 +215,21 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
 									<Input
 										onChange={(event) =>
 											props.setContainerConfiguration(
-												"image_sha",
+												"imageSha",
 												"value",
 												event.target.value,
 											)
 										}
-										value={props.containerConfiguration.image_sha.value}
+										value={props.containerConfiguration.imageSha.value}
 									/>
 									<Field.ErrorText>Please enter a valid Sha</Field.ErrorText>
 								</Field.Root>
 							</HStack>
 							<Checkbox.Root
-								checked={props.containerConfiguration.image_name === null}
+								checked={props.containerConfiguration.imageName === null}
 								onCheckedChange={(event) =>
 									props.setContainerConfiguration(
-										"image_name",
+										"imageName",
 										event.checked === true ? null : "",
 									)
 								}
@@ -256,14 +253,12 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
 									<Input
 										onChange={(event) =>
 											props.setContainerConfiguration(
-												"github_repository",
+												"githubRepository",
 												"owner",
 												event.target.value,
 											)
 										}
-										value={
-											props.containerConfiguration.github_repository?.owner
-										}
+										value={props.containerConfiguration.githubRepository?.owner}
 									/>
 								</Field.Root>
 								<Field.Root width="full">
@@ -271,12 +266,12 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
 									<Input
 										onChange={(event) =>
 											props.setContainerConfiguration(
-												"github_repository",
+												"githubRepository",
 												"name",
 												event.target.value,
 											)
 										}
-										value={props.containerConfiguration.github_repository?.name}
+										value={props.containerConfiguration.githubRepository?.name}
 									/>
 								</Field.Root>
 							</HStack>
@@ -291,12 +286,12 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
 									<Input
 										onChange={(event) =>
 											props.setContainerConfiguration(
-												"exposed_port",
+												"exposedPort",
 												"internal",
 												parseInt(event.target.value, 10),
 											)
 										}
-										value={props.containerConfiguration.exposed_port.internal}
+										value={props.containerConfiguration.exposedPort.internal}
 										type="number"
 									/>
 								</Field.Root>
@@ -305,12 +300,12 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
 									<Input
 										onChange={(event) =>
 											props.setContainerConfiguration(
-												"exposed_port",
+												"exposedPort",
 												"external",
 												parseInt(event.target.value, 10),
 											)
 										}
-										value={props.containerConfiguration.exposed_port.external}
+										value={props.containerConfiguration.exposedPort.external}
 										type="number"
 									/>
 								</Field.Root>
@@ -321,7 +316,7 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
 								Volumes <HardDrive />
 							</Heading>
 							<VStack gap="2" width="full">
-								<For each={props.containerConfiguration.stateful_volume_paths}>
+								<For each={props.containerConfiguration.statefulVolumePaths}>
 									{(path, index) => (
 										<HStack gap="2" width="full">
 											<Field.Root width="full">
@@ -329,7 +324,7 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
 												<Input
 													onChange={(event) =>
 														props.setContainerConfiguration(
-															"stateful_volume_paths",
+															"statefulVolumePaths",
 															index(),
 															event.target.value,
 														)
@@ -342,7 +337,7 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
 												bgColor={{ base: "red.7", _hover: "red.8" }}
 												onClick={() =>
 													props.setContainerConfiguration(
-														"stateful_volume_paths",
+														"statefulVolumePaths",
 														(paths) =>
 															paths.filter(
 																(_, pathIndex) => pathIndex !== index(),
@@ -360,7 +355,7 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
 									size="sm"
 									onClick={() =>
 										props.setContainerConfiguration(
-											"stateful_volume_paths",
+											"statefulVolumePaths",
 											(paths) => paths.concat([""]),
 										)
 									}
@@ -375,7 +370,7 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
 								Environment Variables <Variable />
 							</Heading>
 							<VStack gap="2" width="full">
-								<For each={props.containerConfiguration.environment_variables}>
+								<For each={props.containerConfiguration.environmentVariables}>
 									{(variable, index) => (
 										<HStack gap="2" width="full">
 											<Field.Root width="full">
@@ -383,7 +378,7 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
 												<Input
 													onChange={(event) =>
 														props.setContainerConfiguration(
-															"environment_variables",
+															"environmentVariables",
 															index(),
 															"name",
 															event.target.value,
@@ -397,7 +392,7 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
 												<Input
 													onChange={(event) =>
 														props.setContainerConfiguration(
-															"environment_variables",
+															"environmentVariables",
 															index(),
 															"value",
 															event.target.value,
@@ -412,7 +407,7 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
 												bgColor={{ base: "red.7", _hover: "red.8" }}
 												onClick={() =>
 													props.setContainerConfiguration(
-														"environment_variables",
+														"environmentVariables",
 														(variables) =>
 															variables.filter(
 																(_, variableIndex) => variableIndex !== index(),
@@ -429,7 +424,7 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
 									size="sm"
 									onClick={() =>
 										props.setContainerConfiguration(
-											"environment_variables",
+											"environmentVariables",
 											(variables) =>
 												variables.concat([{ name: "", value: "" }]),
 										)

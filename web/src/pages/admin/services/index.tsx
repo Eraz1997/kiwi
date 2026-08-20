@@ -14,9 +14,9 @@ export const AdminServices: Component = () => {
 		const { jsonPayload } = await adminClient.get("/services");
 		const services: Service[] = jsonPayload.services;
 		services.forEach((service) => {
-			service.created_at = new Date(service.created_at);
-			service.last_modified_at = new Date(service.last_modified_at);
-			service.last_deployed_at = new Date(service.last_deployed_at);
+			service.createdAt = new Date(service.createdAt);
+			service.lastModifiedAt = new Date(service.lastModifiedAt);
+			service.lastDeployedAt = new Date(service.lastDeployedAt);
 		});
 
 		return services;
@@ -42,29 +42,25 @@ export const AdminServices: Component = () => {
 							{(service) => (
 								<Table.Row>
 									<Table.Cell fontWeight="medium">
-										{service.container_configuration.name}
+										{service.containerConfiguration.name}
 									</Table.Cell>
 									<Table.Cell>
 										<Show
-											when={service.container_configuration.github_repository}
+											when={service.containerConfiguration.githubRepository}
 											fallback="-"
 										>
 											{(repo) => `${repo().owner}/${repo().name}`}
 										</Show>
 									</Table.Cell>
-									<Table.Cell>{formatDate(service.created_at)}</Table.Cell>
-									<Table.Cell>
-										{formatDate(service.last_modified_at)}
-									</Table.Cell>
-									<Table.Cell>
-										{formatDate(service.last_deployed_at)}
-									</Table.Cell>
+									<Table.Cell>{formatDate(service.createdAt)}</Table.Cell>
+									<Table.Cell>{formatDate(service.lastModifiedAt)}</Table.Cell>
+									<Table.Cell>{formatDate(service.lastDeployedAt)}</Table.Cell>
 									<Table.Cell width="24" textAlign="end">
 										<Button
 											size="xs"
 											onClick={() =>
 												navigate("admin/services/edit", {
-													name: service.container_configuration.name,
+													name: service.containerConfiguration.name,
 												})
 											}
 										>

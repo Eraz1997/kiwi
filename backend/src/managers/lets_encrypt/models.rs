@@ -2,6 +2,7 @@ use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct NewCertificateOrder {
     pub order_url: String,
     pub dns_record_name: String,
@@ -9,6 +10,7 @@ pub struct NewCertificateOrder {
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum CertificateVerificationStatus {
     Pending,
     Success,
@@ -16,6 +18,7 @@ pub enum CertificateVerificationStatus {
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CertificateInfo {
     pub issuer: String,
     pub expiration_date: NaiveDateTime,

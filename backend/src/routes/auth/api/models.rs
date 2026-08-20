@@ -2,23 +2,27 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct LoginRequest {
     pub username: String,
     pub password_hash: String,
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RefreshCredentialsQuery {
     pub return_uri: String,
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct GetSealingKeyResponse {
     pub key: String,
     pub iv: String,
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateUserRequest {
     pub username: String,
     pub password_hash: String,

@@ -28,7 +28,7 @@ export const AdminServicesEdit: Component = () => {
 		);
 		setContainerInfo(
 			"configuration",
-			service.general_info.container_configuration,
+			service.generalInfo.containerConfiguration,
 		);
 		setContainerInfo("status", service.status);
 	});

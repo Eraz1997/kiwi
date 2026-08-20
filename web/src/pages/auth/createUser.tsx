@@ -34,8 +34,8 @@ export const CreateUser: Component = () => {
 
 		const result = await authBackendClient.post("/create-user", {
 			username: username(),
-			password_hash: passwordHash,
-			invitation_id: queryParams().invitation_id,
+			passwordHash: passwordHash,
+			invitationId: queryParams().invitationId,
 		});
 
 		if (result.statusCode === 401) {

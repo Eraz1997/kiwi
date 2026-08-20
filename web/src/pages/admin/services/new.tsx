@@ -9,18 +9,18 @@ export const AdminServicesNew: Component = () => {
 	const [configuration, setConfiguration] = createStore<ContainerConfiguration>(
 		{
 			name: "",
-			image_name: "",
-			image_sha: { value: "" },
-			exposed_port: {
+			imageName: "",
+			imageSha: { value: "" },
+			exposedPort: {
 				internal: 3000,
 				external: Math.floor(Math.random() * 5000) + 3000,
 			},
-			environment_variables: [],
+			environmentVariables: [],
 			secrets: [],
-			internal_secrets: [],
-			stateful_volume_paths: [],
-			github_repository: null,
-			required_role: null,
+			internalSecrets: [],
+			statefulVolumePaths: [],
+			githubRepository: null,
+			requiredRole: null,
 		},
 	);
 

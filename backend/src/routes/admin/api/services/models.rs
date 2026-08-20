@@ -4,17 +4,20 @@ use serde::{Deserialize, Serialize};
 use crate::managers::{container::models::Log, db::models::ServiceData};
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct GetServicesResponse {
     pub services: Vec<ServiceData>,
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct GetServiceResponse {
     pub general_info: ServiceData,
     pub status: String,
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct GetLogsQuery {
     pub from_date: NaiveDateTime,
     pub to_date: NaiveDateTime,

@@ -38,7 +38,7 @@ export const LogsViewer: Component<Props> = (props) => {
 				return [];
 			}
 			const { jsonPayload: logs } = await adminClient.get(
-				`/services/${props.serviceName}/logs?from_date=${encodeDate(startDate())}&to_date=${encodeDate(endDate())}`,
+				`/services/${props.serviceName}/logs?fromDate=${encodeDate(startDate())}&toDate=${encodeDate(endDate())}`,
 			);
 			return logs;
 		},
@@ -73,16 +73,16 @@ export const LogsViewer: Component<Props> = (props) => {
 													<Table.Row>
 														<Table.Cell>
 															<Switch>
-																<Match when={log.log_type === "Output"}>
+																<Match when={log.logType === "Output"}>
 																	<Info />
 																</Match>
-																<Match when={log.log_type === "Error"}>
+																<Match when={log.logType === "Error"}>
 																	<CircleAlert />
 																</Match>
-																<Match when={log.log_type === "Input"}>
+																<Match when={log.logType === "Input"}>
 																	<TextCursorInput />
 																</Match>
-																<Match when={log.log_type === "Console"}>
+																<Match when={log.logType === "Console"}>
 																	<SquareChevronRight />
 																</Match>
 															</Switch>

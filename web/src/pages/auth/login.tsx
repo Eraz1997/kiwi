@@ -34,7 +34,7 @@ export const Login: Component = () => {
 
 		const result = await authBackendClient.post("/login", {
 			username: username(),
-			password_hash: passwordHash,
+			passwordHash: passwordHash,
 		});
 
 		if (result.statusCode === 401) {
@@ -42,7 +42,7 @@ export const Login: Component = () => {
 		} else if (result.statusCode >= 400) {
 			setError("unknown");
 		} else {
-			const returnUri = queryParams().return_uri;
+			const returnUri = queryParams().returnUri;
 			await credentialsClient.storeAndSealLocalEncryptionKey(
 				username(),
 				password(),

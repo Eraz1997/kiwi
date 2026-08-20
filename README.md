@@ -70,6 +70,13 @@ If your router is behind CG-NAT or anyway doesn't allow you to do port-forwardin
     sudo systemctl restart kiwi.service
     ```
 
+#### Migration Notes (Breaking Changes) 💔
+
+##### 0.3.0
+
+- Make sure to transform your `.kiwi/secrets.json` file to camel case before updating.
+- Update CI job
+
 ## Usage 🚀
 
 Refer to the [user manual](./USAGE.md).

@@ -34,7 +34,7 @@ runs:
       run: |
         token=$(curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=kiwiDeploy" | jq -r '.value')
         curl -X POST https://ci.${{ inputs.kiwi-domain }}/api/push-tarball \
-          -F "oidc_token=$token" \
+          -F "oidcToken=$token" \
           -F "tarball=@${{ inputs.tarball }}" \
           --fail-with-body
 
@@ -44,5 +44,5 @@ runs:
         token=$(curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=kiwiDeploy" | jq -r '.value')
         curl -X POST https://ci.${{ inputs.kiwi-domain }}/api/deploy/${{ inputs.service-name }} \
           -H "Content-Type: application/json" \
-          -d '{"oidc_token": "'"$token"'", "image_sha": "'"${{ inputs.image-sha }}"'"}' \
+          -d '{"oidcToken": "'"$token"'", "imageSha": "'"${{ inputs.image-sha }}"'"}' \
           --fail-with-body

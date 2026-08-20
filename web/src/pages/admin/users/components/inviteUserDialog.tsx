@@ -42,7 +42,7 @@ export const InviteUserDialog: Component<Props> = (props) => {
 	const [selectedRole, setSelectedRole] = createSignal<Role>();
 	const [invitationId, setInvitationId] = createSignal<string>();
 	const invitationUrl = () => {
-		return `https://auth.${domain()}/create-user?invitation_id=${invitationId()}`;
+		return `https://auth.${domain()}/create-user?invitationId=${invitationId()}`;
 	};
 
 	const resetState = () => {
@@ -57,7 +57,7 @@ export const InviteUserDialog: Component<Props> = (props) => {
 			});
 
 			if (statusCode === 200) {
-				setInvitationId(jsonPayload.invitation_id);
+				setInvitationId(jsonPayload.invitationId);
 			} else {
 				props.createToast({
 					title: "Failed",
