@@ -1,6 +1,8 @@
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use deadpool_postgres::{CreatePoolError, PoolError};
+use kangaroo_axum::IntoKangarooError;
+use serde::Serialize;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone)]
@@ -77,6 +79,23 @@ impl IntoResponse for Error {
             self.message
         };
         (self.code, message).into_response()
+    }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct KangarooError {
+    error_message: String,
+}
+
+impl IntoKangarooError for Error {
+    fn into_kangaroo_error(self) -> (StatusCode, impl serde::Serialize) {
+        (
+            self.code,
+            KangarooError {
+                error_message: self.message,
+            },
+        )
     }
 }
 

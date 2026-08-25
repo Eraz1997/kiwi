@@ -1,11 +1,14 @@
 import type { Component } from "solid-js";
 import { createStore } from "solid-js/store";
 import { Container } from "styled-system/jsx";
-import { NavigationBar } from "~/components";
+import { useKangaroo } from "~/contexts/kangaroo";
 import type { ContainerConfiguration } from "~/types";
-import { ServiceDetailsCard } from "./components/serviceDetailsCard";
+import { NavigationBar } from "../navigationBar";
+import { ServiceDetailsCard } from "./edit/serviceDetailsCard";
 
 export const AdminServicesNew: Component = () => {
+	const { consumeGenericAdminData } = useKangaroo();
+	const adminData = consumeGenericAdminData();
 	const [configuration, setConfiguration] = createStore<ContainerConfiguration>(
 		{
 			name: "",
@@ -26,7 +29,7 @@ export const AdminServicesNew: Component = () => {
 
 	return (
 		<>
-			<NavigationBar />
+			<NavigationBar me={adminData?.me} />
 			<Container p="12" maxW="4xl" overflowX="scroll">
 				<ServiceDetailsCard
 					containerConfiguration={configuration}

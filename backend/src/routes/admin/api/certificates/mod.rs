@@ -7,8 +7,11 @@ use axum::{
 use crate::{
     error::Error,
     managers::lets_encrypt::models::CertificateVerificationStatus,
-    routes::admin::api::certificates::models::{
-        GetCertificateInfoResponse, OrderCertificateRequest, OrderCertificateResponse,
+    routes::admin::{
+        api::certificates::models::{
+            GetCertificateInfoResponse, OrderCertificateRequest, OrderCertificateResponse,
+        },
+        get_certificate_info_data,
     },
     state::AppState,
 };
@@ -26,23 +29,9 @@ pub fn create_router() -> Router<AppState> {
 async fn get_certificate_info(
     State(state): State<AppState>,
 ) -> Result<Json<GetCertificateInfoResponse>, Error> {
-    let info = state
-        .lets_encrypt_manager
-        .lock()
-        .await
-        .get_certificate_info()
-        .await?;
-    let new_pending_order = state
-        .redis_manager
-        .get_last_certificate_order_url()
-        .await?
-        .is_some();
+    let info = get_certificate_info_data(&state).await?;
 
-    Ok(Json(GetCertificateInfoResponse {
-        issuer: info.issuer,
-        expiration_date: info.expiration_date,
-        new_pending_order,
-    }))
+    Ok(Json(info))
 }
 
 async fn order_certificate(

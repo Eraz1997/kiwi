@@ -42,3 +42,9 @@ export type ContainerLog = {
 	message: string;
 	logType: ContainerLogType;
 };
+
+export type CertificateInfo = {
+	issuer: string;
+	expirationDate: string;
+	newPendingOrder: boolean;
+};

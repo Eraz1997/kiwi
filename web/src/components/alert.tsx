@@ -1,28 +1,24 @@
-import { type Assign, ark, type PolymorphicProps } from "@ark-ui/solid";
+import { ark } from "@ark-ui/solid/factory";
+import { InfoIcon } from "lucide-solid";
 import type { ComponentProps } from "solid-js";
+import { createStyleContext } from "styled-system/jsx";
 import { alert } from "styled-system/recipes";
-import type { HTMLStyledProps } from "styled-system/types";
-import { createStyleContext } from "./utils/create-style-context";
 
 const { withProvider, withContext } = createStyleContext(alert);
 
 export type RootProps = ComponentProps<typeof Root>;
-export const Root = withProvider<
-	Assign<HTMLStyledProps<"div">, PolymorphicProps<"div">>
->(ark.div, "root");
+export const Root = withProvider(ark.div, "root");
+export const Title = withContext(ark.h3, "title");
+export const Description = withContext(ark.div, "description");
+export const Content = withContext(ark.div, "content");
 
-export const Content = withContext<
-	Assign<HTMLStyledProps<"div">, PolymorphicProps<"div">>
->(ark.div, "content");
+type IndicatorProps = ComponentProps<typeof StyledIndicator>;
+const StyledIndicator = withContext(ark.span, "indicator");
 
-export const Description = withContext<
-	Assign<HTMLStyledProps<"div">, PolymorphicProps<"div">>
->(ark.div, "description");
-
-export const Icon = withContext<
-	Assign<HTMLStyledProps<"svg">, PolymorphicProps<"svg">>
->(ark.svg, "icon");
-
-export const Title = withContext<
-	Assign<HTMLStyledProps<"h5">, PolymorphicProps<"h5">>
->(ark.h5, "title");
+export const Indicator = (props: IndicatorProps) => {
+	return (
+		<StyledIndicator {...props}>
+			<InfoIcon />
+		</StyledIndicator>
+	);
+};

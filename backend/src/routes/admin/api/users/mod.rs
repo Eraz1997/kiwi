@@ -3,13 +3,12 @@ use axum::http::HeaderMap;
 use axum::routing::{delete, get, post};
 use axum::{Json, Router};
 
-use crate::constants::KIWI_USER_ID_HEADER_NAME;
 use crate::error::Error;
-use crate::managers::db::DbManager;
 use crate::routes::admin::api::users::models::{
     CreateUserInvitationRequest, CreateUserInvitationResponse, DeleteUserRequest, GetMeResponse,
-    GetUsersResponse, User,
+    GetUsersResponse,
 };
+use crate::routes::admin::{get_current_user, get_users_data};
 use crate::state::AppState;
 
 mod error;
@@ -24,15 +23,7 @@ pub fn create_router() -> Router<AppState> {
 }
 
 async fn get_users(State(state): State<AppState>) -> Result<Json<GetUsersResponse>, Error> {
-    let users_data = state.db_manager.get_users_data().await?;
-    let users: Vec<User> = users_data
-        .into_iter()
-        .map(|user_data| User {
-            username: user_data.username,
-            role: user_data.role,
-        })
-        .collect();
-
+    let users = get_users_data(&state.db_manager).await?;
     Ok(Json(users))
 }
 
@@ -71,21 +62,4 @@ async fn create_user_invitation(
     Ok(Json(CreateUserInvitationResponse {
         invitation_id: user_invitation.id,
     }))
-}
-
-async fn get_current_user(db_manager: &DbManager, headers: HeaderMap) -> Result<User, Error> {
-    let user_id = headers
-        .get(KIWI_USER_ID_HEADER_NAME)
-        .and_then(|value| value.to_str().ok())
-        .and_then(|value| value.parse::<i64>().ok())
-        .ok_or(Error::serialisation())?;
-    let user_data = db_manager
-        .get_user_data_from_id(&user_id)
-        .await?
-        .ok_or(Error::unauthorised())?;
-
-    Ok(User {
-        username: user_data.username,
-        role: user_data.role,
-    })
 }

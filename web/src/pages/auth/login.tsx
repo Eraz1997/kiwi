@@ -61,28 +61,26 @@ export const Login: Component = () => {
 			<VStack gap="6">
 				<Heading textStyle="6xl">🥝</Heading>
 				<Show when={success()}>
-					<Alert.Root borderColor="lime.default">
-						<Alert.Icon
-							color="lime.text"
-							asChild={(iconProps) => <PartyPopper {...iconProps()} />}
-						/>
+					<Alert.Root status="neutral">
+						<Alert.Indicator>
+							<PartyPopper />
+						</Alert.Indicator>
 						<Alert.Content>
-							<Alert.Title color="lime.text">Signed in</Alert.Title>
-							<Alert.Description color="lime.text">
+							<Alert.Title>Signed in</Alert.Title>
+							<Alert.Description>
 								You can now visit Kiwi services!
 							</Alert.Description>
 						</Alert.Content>
 					</Alert.Root>
 				</Show>
 				<Show when={error()}>
-					<Alert.Root borderColor="red.default">
-						<Alert.Icon
-							color="red.text"
-							asChild={(iconProps) => <CircleSlash {...iconProps()} />}
-						/>
+					<Alert.Root status="error">
+						<Alert.Indicator>
+							<CircleSlash />
+						</Alert.Indicator>
 						<Alert.Content>
-							<Alert.Title color="red.text">Access denied</Alert.Title>
-							<Alert.Description color="red.text">
+							<Alert.Title>Access denied</Alert.Title>
+							<Alert.Description>
 								<Switch>
 									<Match when={error() === "bad credentials"}>
 										The credentials you submitted are invalid.

@@ -18,6 +18,7 @@ use axum::extract::DefaultBodyLimit;
 use axum::http::{HeaderValue, header};
 use axum::middleware;
 use clap::Parser;
+use kangaroo_axum::{KangarooConfig, KangarooRouterExtension};
 use managers::container::ContainerManager;
 use managers::container::models::ContainerConfiguration;
 use managers::db::DbManager;
@@ -38,7 +39,6 @@ mod middlewares;
 mod models;
 mod routes;
 mod server;
-mod services;
 mod settings;
 mod state;
 mod worker;
@@ -73,7 +73,7 @@ async fn main() -> Result<(), Error> {
 
     let db_manager = DbManager::new(&db_admin_username, &db_admin_password).await?;
     let redis_manager = RedisManager::new(&redis_admin_password).await?;
-    let local_http_manager = LocalHttpManager::new(&settings)?;
+    let local_http_manager = LocalHttpManager::new()?;
     let dynamic_dns_manager = match secrets_manager.dynamic_dns_api_configuration() {
         Some(configuration) => Arc::new(Mutex::new(Some(
             DynamicDnsManager::new(&configuration).await?,
@@ -146,7 +146,7 @@ async fn main() -> Result<(), Error> {
         lets_encrypt_manager: lets_encrypt_manager.clone(),
     };
 
-    let app = create_router(&settings)
+    let app = create_router()
         .layer(TraceLayer::new_for_http())
         .layer(SetResponseHeaderLayer::overriding(
             header::STRICT_TRANSPORT_SECURITY,
@@ -162,7 +162,11 @@ async fn main() -> Result<(), Error> {
             state.clone(),
             authentication_middleware,
         ))
-        .with_state(state);
+        .with_state(state)
+        .with_kangaroo(
+            KangarooConfig::new(&settings.static_files_path)
+                .with_frontend_development_server(settings.get_frontend_development_server_uri()),
+        );
 
     let server = Server::new(&settings);
     let worker = Worker::new(dynamic_dns_manager, lets_encrypt_manager);

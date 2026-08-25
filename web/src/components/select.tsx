@@ -1,90 +1,63 @@
-import { type Assign, Select } from "@ark-ui/solid";
-import type { ComponentProps } from "solid-js";
+import type { Assign, CollectionItem, SelectRootProps } from "@ark-ui/solid";
+import { ark } from "@ark-ui/solid/factory";
+import { Select, useSelectItemContext } from "@ark-ui/solid/select";
+import { CheckIcon, ChevronsUpDownIcon } from "lucide-solid";
+import { Show } from "solid-js";
+import { createStyleContext } from "styled-system/jsx";
 import { type SelectVariantProps, select } from "styled-system/recipes";
 import type { HTMLStyledProps } from "styled-system/types";
-import { createStyleContext } from "./utils/create-style-context";
 
-const { withRootProvider, withContext } = createStyleContext(select);
+const { withProvider, withContext } = createStyleContext(select);
 
-export type RootProviderProps = ComponentProps<typeof RootProvider>;
-export const RootProvider = withRootProvider<
-	Assign<
-		Assign<
-			HTMLStyledProps<"div">,
-			Select.RootProviderBaseProps<typeof Select.CollectionItem>
-		>,
-		SelectVariantProps
-	>
->(Select.RootProvider);
+type StyleProps = SelectVariantProps & HTMLStyledProps<"div">;
 
-export type RootProps = ComponentProps<typeof Root>;
-export const Root = withRootProvider<
-	Assign<
-		Assign<
-			HTMLStyledProps<"div">,
-			Select.RootBaseProps<typeof Select.CollectionItem>
-		>,
-		SelectVariantProps
-	>
->(Select.Root);
+export type RootProps<T extends CollectionItem> = Assign<
+	SelectRootProps<T>,
+	StyleProps
+>;
 
-export const ClearTrigger = withContext<
-	Assign<HTMLStyledProps<"button">, Select.ClearTriggerBaseProps>
->(Select.ClearTrigger, "clearTrigger");
+export const Root = withProvider(
+	Select.Root,
+	"root",
+) as Select.RootComponent<StyleProps>;
 
-export const Content = withContext<
-	Assign<HTMLStyledProps<"div">, Select.ContentBaseProps>
->(Select.Content, "content");
-
-export const Control = withContext<
-	Assign<HTMLStyledProps<"div">, Select.ControlBaseProps>
->(Select.Control, "control");
-
-export const Indicator = withContext<
-	Assign<HTMLStyledProps<"div">, Select.IndicatorBaseProps>
->(Select.Indicator, "indicator");
-
-export const ItemGroupLabel = withContext<
-	Assign<HTMLStyledProps<"div">, Select.ItemGroupLabelBaseProps>
->(Select.ItemGroupLabel, "itemGroupLabel");
-
-export const ItemGroup = withContext<
-	Assign<HTMLStyledProps<"div">, Select.ItemGroupBaseProps>
->(Select.ItemGroup, "itemGroup");
-
-export const ItemIndicator = withContext<
-	Assign<HTMLStyledProps<"div">, Select.ItemIndicatorBaseProps>
->(Select.ItemIndicator, "itemIndicator");
-
-export const Item = withContext<
-	Assign<HTMLStyledProps<"div">, Select.ItemBaseProps>
->(Select.Item, "item");
-
-export const ItemText = withContext<
-	Assign<HTMLStyledProps<"span">, Select.ItemTextBaseProps>
->(Select.ItemText, "itemText");
-
-export const Label = withContext<
-	Assign<HTMLStyledProps<"label">, Select.LabelBaseProps>
->(Select.Label, "label");
-
-export const List = withContext<
-	Assign<HTMLStyledProps<"div">, Select.ListBaseProps>
->(Select.List, "list");
-
-export const Positioner = withContext<
-	Assign<HTMLStyledProps<"div">, Select.PositionerBaseProps>
->(Select.Positioner, "positioner");
-
-export const Trigger = withContext<
-	Assign<HTMLStyledProps<"button">, Select.TriggerBaseProps>
->(Select.Trigger, "trigger");
-
-export const ValueText = withContext<
-	Assign<HTMLStyledProps<"span">, Select.ValueTextBaseProps>
->(Select.ValueText, "valueText");
+export const ClearTrigger = withContext(Select.ClearTrigger, "clearTrigger");
+export const Content = withContext(Select.Content, "content");
+export const Control = withContext(Select.Control, "control");
+export const IndicatorGroup = withContext(ark.div, "indicatorGroup");
+export const Item = withContext(Select.Item, "item");
+export const ItemGroup = withContext(Select.ItemGroup, "itemGroup");
+export const ItemGroupLabel = withContext(
+	Select.ItemGroupLabel,
+	"itemGroupLabel",
+);
+export const ItemText = withContext(Select.ItemText, "itemText");
+export const Label = withContext(Select.Label, "label");
+export const List = withContext(Select.List, "list");
+export const Positioner = withContext(Select.Positioner, "positioner");
+export const Trigger = withContext(Select.Trigger, "trigger");
+export const ValueText = withContext(Select.ValueText, "valueText");
+export const Indicator = withContext(Select.Indicator, "indicator", {
+	defaultProps: () => ({ children: <ChevronsUpDownIcon /> }),
+});
+export const HiddenSelect = Select.HiddenSelect;
 
 export {
 	SelectContext as Context,
-	SelectHiddenSelect as HiddenSelect,
-} from "@ark-ui/solid";
+	SelectItemContext as ItemContext,
+	type SelectValueChangeDetails as ValueChangeDetails,
+} from "@ark-ui/solid/select";
+
+const StyledItemIndicator = withContext(Select.ItemIndicator, "itemIndicator");
+
+export const ItemIndicator = (props: HTMLStyledProps<"div">) => {
+	const item = useSelectItemContext();
+
+	return (
+		<Show when={item().selected} fallback={<svg aria-hidden="true" />}>
+			<StyledItemIndicator {...props}>
+				<CheckIcon />
+			</StyledItemIndicator>
+		</Show>
+	);
+};

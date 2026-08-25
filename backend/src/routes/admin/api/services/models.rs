@@ -1,7 +1,10 @@
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
-use crate::managers::{container::models::Log, db::models::ServiceData};
+use crate::{
+    managers::{container::models::Log, db::models::ServiceData},
+    routes::admin::models::DetailedServiceData,
+};
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -9,12 +12,7 @@ pub struct GetServicesResponse {
     pub services: Vec<ServiceData>,
 }
 
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct GetServiceResponse {
-    pub general_info: ServiceData,
-    pub status: String,
-}
+pub type GetServiceResponse = DetailedServiceData;
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

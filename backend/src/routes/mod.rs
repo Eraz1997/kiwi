@@ -9,7 +9,6 @@ use reqwest::Body;
 use crate::{
     error::Error,
     managers::{db::DbManager, local_http::LocalHttpManager, redis::RedisManager},
-    settings::Settings,
     state::AppState,
 };
 
@@ -19,10 +18,10 @@ pub mod ci;
 mod error;
 pub mod status;
 
-pub fn create_router(settings: &Settings) -> Router<AppState> {
+pub fn create_router() -> Router<AppState> {
     Router::new()
-        .nest("/admin", admin::create_router(settings))
-        .nest("/auth", auth::create_router(settings))
+        .nest("/admin", admin::create_router())
+        .nest("/auth", auth::create_router())
         .nest("/ci", ci::create_router())
         .nest("/status", status::create_router())
         .route("/{service}", any(forward_to_service_root))

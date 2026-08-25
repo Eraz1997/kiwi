@@ -1,47 +1,35 @@
-import { type Assign, Dialog } from "@ark-ui/solid";
+import { Dialog, useDialogContext } from "@ark-ui/solid/dialog";
+import { ark } from "@ark-ui/solid/factory";
 import type { ComponentProps } from "solid-js";
-import { type DialogVariantProps, dialog } from "styled-system/recipes";
-import type { HTMLStyledProps } from "styled-system/types";
-import { createStyleContext } from "./utils/create-style-context";
+import { createStyleContext, styled } from "styled-system/jsx";
+import { dialog } from "styled-system/recipes";
 
 const { withRootProvider, withContext } = createStyleContext(dialog);
 
-export type RootProviderProps = ComponentProps<typeof RootProvider>;
-export const RootProvider = withRootProvider<
-	Assign<Dialog.RootProviderProps, DialogVariantProps>
->(Dialog.RootProvider);
-
 export type RootProps = ComponentProps<typeof Root>;
-export const Root = withRootProvider<
-	Assign<Dialog.RootProps, DialogVariantProps>
->(Dialog.Root);
+export const Root = withRootProvider(Dialog.Root, {
+	defaultProps: () => ({ unmountOnExit: true, lazyMount: true }),
+});
+export const RootProvider = withRootProvider(Dialog.RootProvider, {
+	defaultProps: () => ({ unmountOnExit: true, lazyMount: true }),
+});
+export const Backdrop = withContext(Dialog.Backdrop, "backdrop");
+export const CloseTrigger = withContext(Dialog.CloseTrigger, "closeTrigger");
+export const Content = withContext(Dialog.Content, "content");
+export const Description = withContext(Dialog.Description, "description");
+export const Positioner = withContext(Dialog.Positioner, "positioner");
+export const Title = withContext(Dialog.Title, "title");
+export const Trigger = withContext(Dialog.Trigger, "trigger");
+export const Body = withContext(ark.div, "body");
+export const Header = withContext(ark.div, "header");
+export const Footer = withContext(ark.div, "footer");
 
-export const Backdrop = withContext<
-	Assign<HTMLStyledProps<"div">, Dialog.BackdropBaseProps>
->(Dialog.Backdrop, "backdrop");
+const StyledButton = styled(ark.button);
 
-export const CloseTrigger = withContext<
-	Assign<HTMLStyledProps<"button">, Dialog.CloseTriggerBaseProps>
->(Dialog.CloseTrigger, "closeTrigger");
+export const ActionTrigger = (props: ComponentProps<typeof StyledButton>) => {
+	const dialog = useDialogContext();
 
-export const Content = withContext<
-	Assign<HTMLStyledProps<"div">, Dialog.ContentBaseProps>
->(Dialog.Content, "content");
+	return <StyledButton {...props} onClick={() => dialog().setOpen(false)} />;
+};
 
-export const Description = withContext<
-	Assign<HTMLStyledProps<"div">, Dialog.DescriptionBaseProps>
->(Dialog.Description, "description");
-
-export const Positioner = withContext<
-	Assign<HTMLStyledProps<"div">, Dialog.PositionerBaseProps>
->(Dialog.Positioner, "positioner");
-
-export const Title = withContext<
-	Assign<HTMLStyledProps<"h2">, Dialog.TitleBaseProps>
->(Dialog.Title, "title");
-
-export const Trigger = withContext<
-	Assign<HTMLStyledProps<"button">, Dialog.TriggerBaseProps>
->(Dialog.Trigger, "trigger");
-
-export { DialogContext as Context } from "@ark-ui/solid";
+export { DialogContext as Context } from "@ark-ui/solid/dialog";

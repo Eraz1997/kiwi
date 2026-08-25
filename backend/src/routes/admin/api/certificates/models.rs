@@ -1,13 +1,8 @@
-use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct GetCertificateInfoResponse {
-    pub issuer: String,
-    pub expiration_date: NaiveDateTime,
-    pub new_pending_order: bool,
-}
+use crate::routes::admin::models::CertificateInfo;
+
+pub type GetCertificateInfoResponse = CertificateInfo;
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

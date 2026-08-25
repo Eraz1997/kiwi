@@ -9,8 +9,8 @@ use crate::error::Error;
 pub struct Settings {
     #[arg(long, default_value_t = default_config_folder_path())]
     config_folder_path: String,
-    #[arg(long, default_value = "3000")]
-    pub dev_frontend_server_port: i32,
+    #[arg(long, default_value = "http://localhost:3000")]
+    frontend_development_server_uri: String,
     #[arg(long, default_value = "127.0.0.1")]
     host: String,
     #[arg(long, default_value = "staging")]
@@ -48,6 +48,14 @@ impl Settings {
         match self.lets_encrypt_environment {
             LetsEncryptEnvironment::Staging => LetsEncrypt::Staging.url().to_string(),
             LetsEncryptEnvironment::Production => LetsEncrypt::Production.url().to_string(),
+        }
+    }
+
+    pub fn get_frontend_development_server_uri(&self) -> Option<&str> {
+        if self.is_development() {
+            Some(&self.frontend_development_server_uri)
+        } else {
+            None
         }
     }
 }

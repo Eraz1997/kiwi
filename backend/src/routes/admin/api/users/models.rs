@@ -1,14 +1,8 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::models::UserRole;
+use crate::{models::UserRole, routes::admin::models::User};
 
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct User {
-    pub username: String,
-    pub role: UserRole,
-}
 pub type GetUsersResponse = Vec<User>;
 pub type GetMeResponse = User;
 

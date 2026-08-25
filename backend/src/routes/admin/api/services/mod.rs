@@ -7,6 +7,7 @@ use crate::managers::secrets::models::Secret;
 use crate::routes::admin::api::services::models::{
     GetLogsQuery, GetLogsResponse, GetServiceResponse, GetServicesResponse,
 };
+use crate::routes::admin::{get_detailed_service_data, get_services_data};
 use crate::state::AppState;
 use axum::extract::{Path, Query, State};
 use axum::routing::{delete, get, post, put};
@@ -27,13 +28,7 @@ pub fn create_router() -> Router<AppState> {
 }
 
 async fn get_services(State(state): State<AppState>) -> Result<Json<GetServicesResponse>, Error> {
-    let services = state
-        .db_manager
-        .get_services_data()
-        .await?
-        .into_iter()
-        .map(|service| service.with_redacted_internal_secrets())
-        .collect();
+    let services = get_services_data(&state.db_manager).await?;
     Ok(Json(GetServicesResponse { services }))
 }
 
@@ -41,18 +36,10 @@ async fn get_service(
     State(state): State<AppState>,
     Path(name): Path<String>,
 ) -> Result<Json<GetServiceResponse>, Error> {
-    let service = state
-        .db_manager
-        .get_service_data(&name)
-        .await?
-        .ok_or(Error::container_not_found())?
-        .with_redacted_internal_secrets();
-    let status = state.container_manager.get_container_status(&name).await?;
+    let service_data =
+        get_detailed_service_data(&state.db_manager, &state.container_manager, &name).await?;
 
-    Ok(Json(GetServiceResponse {
-        general_info: service,
-        status,
-    }))
+    Ok(Json(service_data))
 }
 
 async fn get_logs(

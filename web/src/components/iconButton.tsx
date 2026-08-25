@@ -1,9 +1,7 @@
-import { ark } from "@ark-ui/solid";
-import type { ComponentProps } from "solid-js";
-import { styled } from "styled-system/jsx";
-import { type ButtonVariantProps, button } from "styled-system/recipes";
+import { Button, type ButtonProps } from "./button";
 
-export type IconButtonProps = ComponentProps<typeof IconButton>;
-export const IconButton = styled(ark.button, button, {
-	defaultProps: { px: "0" } as ButtonVariantProps,
-});
+export interface IconButtonProps extends ButtonProps {}
+
+export const IconButton = (props: IconButtonProps) => {
+	return <Button px="0" py="0" {...props} />;
+};

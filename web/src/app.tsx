@@ -1,13 +1,14 @@
 import { type Component, Match, Switch } from "solid-js";
-import { Box } from "styled-system/jsx/box";
+import { Toaster } from "./components/toast";
+import { KangarooProvider } from "./contexts/kangaroo";
 import { useRouter } from "./contexts/router";
-import { Certificates } from "./pages/admin/certificates";
-import { DynamicDns } from "./pages/admin/dynamicDns";
-import { AdminIndex } from "./pages/admin/index";
-import { AdminServices } from "./pages/admin/services";
-import { AdminServicesEdit } from "./pages/admin/services/edit";
+import { AdminIndex } from "./pages/admin/(admin)";
+import { Certificates } from "./pages/admin/(certificates)";
+import { DynamicDns } from "./pages/admin/(dynamicDns)";
+import { AdminServices } from "./pages/admin/services/(services)";
+import { AdminServicesEdit } from "./pages/admin/services/edit/(edit)";
 import { AdminServicesNew } from "./pages/admin/services/new";
-import { AdminUsers } from "./pages/admin/users";
+import { AdminUsers } from "./pages/admin/users/(users)";
 import { CreateUser } from "./pages/auth/createUser";
 import { Login } from "./pages/auth/login";
 import { Logout } from "./pages/auth/logout";
@@ -17,7 +18,7 @@ export const App: Component = () => {
 	const { currentPage } = useRouter();
 
 	return (
-		<Box class="light">
+		<KangarooProvider>
 			<Switch>
 				<Match when={currentPage() === "auth/create-user"}>
 					<CreateUser />
@@ -53,6 +54,7 @@ export const App: Component = () => {
 					<NotFound />
 				</Match>
 			</Switch>
-		</Box>
+			<Toaster />
+		</KangarooProvider>
 	);
 };
