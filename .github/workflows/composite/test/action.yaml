@@ -10,7 +10,8 @@ runs:
         echo "$HOME/.fnm" >> $GITHUB_PATH
         export PATH="$PATH:$HOME/.fnm"
         eval "$(fnm env)"
-        fnm install --corepack-enabled 26
+        fnm install 26
+        npm install --global pnpm
 
     - name: Install Cargo
       shell: bash -euo pipefail {0}
