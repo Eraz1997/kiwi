@@ -1,6 +1,6 @@
-# Web Builder Stage (node:24.7.0-trixie)
+# Web Builder Stage (node:26.7.0-trixie)
 
-from node@sha256:a22d64d626515462248d80659745c9de26454a527b0441ec796b3f8f6106bfc2 as web-builder
+from node@sha256:2baf63043c99f4e98ed174ac428bf87f0f9ac5bf49194d60ade5acad24a1efda as web-builder
 
     copy web /src
     workdir /src
@@ -8,17 +8,17 @@ from node@sha256:a22d64d626515462248d80659745c9de26454a527b0441ec796b3f8f6106bfc
     run pnpm install --frozen-lockfile
     run pnpm vite build --outDir /dist
 
-# Backend Builder Stage (rust:1.89.0-trixie)
+# Backend Builder Stage (rust:1.98.0-trixie)
 
-from rust@sha256:9e1b362e100b2c510355314491708bdc59d79b8ed93e94580aba9e4a370badab as backend-builder
+from rust@sha256:bb3b8b0b0fa67da87b913ae57e8b3a860d6988e77eeea4aa63b496d219531bd3 as backend-builder
 
     copy backend /src
     workdir /src
     run cargo install --path . --root /dist
 
-# Runtime (debian:trixie-20250908-slim)
+# Runtime (debian:trixie-20260824-slim)
 
-from debian@sha256:c2880112cc5c61e1200c26f106e4123627b49726375eb5846313da9cca117337 as runtime
+from debian@sha256:d7e12182ce18b85b93007c1dedf31f2d29e01ccf3182cc4017c709b6259bc132 as runtime
 
     ## Install System Dependencies
 
@@ -38,7 +38,6 @@ from debian@sha256:c2880112cc5c61e1200c26f106e4123627b49726375eb5846313da9cca117
 
     cmd /app/bin/kiwi-api \
         --config-folder-path /config \
-        --dev-frontend-server-port 0 \
         --host 0.0.0.0 \
         --lets-encrypt-environment production \
         --log-level info \

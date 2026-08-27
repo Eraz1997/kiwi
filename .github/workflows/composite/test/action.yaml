@@ -10,7 +10,7 @@ runs:
         echo "$HOME/.fnm" >> $GITHUB_PATH
         export PATH="$PATH:$HOME/.fnm"
         eval "$(fnm env)"
-        fnm install --corepack-enabled 22
+        fnm install --corepack-enabled 26
 
     - name: Install Cargo
       shell: bash -euo pipefail {0}
@@ -23,7 +23,7 @@ runs:
       run: |
         cd web
         eval "$(fnm env)"
-        fnm use 22
+        fnm use 26
         pnpm install
         pnpm biome check
         pnpm tsc

@@ -4,6 +4,7 @@ use axum::{
     response::Response,
     routing::any,
 };
+use kangaroo_axum::KangarooConfig;
 use reqwest::Body;
 
 use crate::{
@@ -18,10 +19,10 @@ pub mod ci;
 mod error;
 pub mod status;
 
-pub fn create_router() -> Router<AppState> {
+pub fn create_router(kangaroo_config: &KangarooConfig) -> Router<AppState> {
     Router::new()
-        .nest("/admin", admin::create_router())
-        .nest("/auth", auth::create_router())
+        .nest("/admin", admin::create_router(kangaroo_config))
+        .nest("/auth", auth::create_router(kangaroo_config))
         .nest("/ci", ci::create_router())
         .nest("/status", status::create_router())
         .route("/{service}", any(forward_to_service_root))

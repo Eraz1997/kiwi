@@ -88,15 +88,15 @@ export default defineConfig({
 
 				radii: {
 					l1: {
-						value: "{radii.xs}",
+						value: "{radii.xl}",
 					},
 
 					l2: {
-						value: "{radii.sm}",
+						value: "{radii.2xl}",
 					},
 
 					l3: {
-						value: "{radii.md}",
+						value: "{radii.3xl}",
 					},
 				},
 			},

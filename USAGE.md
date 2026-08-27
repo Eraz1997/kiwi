@@ -8,7 +8,7 @@ At the first start, Kiwi won't have any users, not even the administrator. Run
 sudo journalctl --user kiwi.service
 ```
 
-and you will find a warning log saying something like `admin user not found. invitation created with ID: <id>. please visit https://auth.<your-domain>/create-user?invitation_id=<id>`.
+and you will find a warning log saying something like `admin user not found. invitation created with ID: <id>. please visit https://auth.<your-domain>/create-user?invitationId=<id>`.
 
 Vist the link and create your admin user, specifying securing credentials. Make sure to never lose or forget them.
 

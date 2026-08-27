@@ -5,7 +5,7 @@ use axum::{
 };
 use chrono::{Local, TimeDelta};
 use hyper::HeaderMap;
-use kangaroo_axum::{IntoKangarooError, kangarooise};
+use kangaroo_axum::{IntoKangarooError, KangarooConfig, KangarooRouterExtension, kangarooise};
 
 use crate::{
     constants::KIWI_USER_ID_HEADER_NAME,
@@ -24,7 +24,7 @@ use crate::{
 mod api;
 pub mod models;
 
-pub fn create_router() -> Router<AppState> {
+pub fn create_router(kangaroo_config: &KangarooConfig) -> Router<AppState> {
     Router::new()
         .nest("/api", api::create_router())
         .route("/", get(get_generic_admin_page))
@@ -34,6 +34,7 @@ pub fn create_router() -> Router<AppState> {
         .route("/services/edit", get(get_edit_service))
         .route("/dynamic-dns", get(get_dynamic_dns))
         .route("/certificates", get(get_certificates))
+        .with_kangaroo(kangaroo_config.clone())
 }
 
 #[kangarooise]

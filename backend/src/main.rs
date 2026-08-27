@@ -18,7 +18,7 @@ use axum::extract::DefaultBodyLimit;
 use axum::http::{HeaderValue, header};
 use axum::middleware;
 use clap::Parser;
-use kangaroo_axum::{KangarooConfig, KangarooRouterExtension};
+use kangaroo_axum::KangarooConfig;
 use managers::container::ContainerManager;
 use managers::container::models::ContainerConfiguration;
 use managers::db::DbManager;
@@ -122,7 +122,7 @@ async fn main() -> Result<(), Error> {
         .await?;
     if let Some(invitation) = invitation {
         tracing::warn!(
-            "admin user not found. invitation created with ID: {}. please visit https://auth.<your-domain>/create-user?invitation_id={}",
+            "admin user not found. invitation created with ID: {}. please visit https://auth.<your-domain>/create-user?invitationId={}",
             invitation.id,
             invitation.id
         );
@@ -146,7 +146,10 @@ async fn main() -> Result<(), Error> {
         lets_encrypt_manager: lets_encrypt_manager.clone(),
     };
 
-    let app = create_router()
+    let kangaroo_config = KangarooConfig::new(&settings.static_files_path)
+        .with_frontend_development_server(settings.get_frontend_development_server_uri());
+
+    let app = create_router(&kangaroo_config)
         .layer(TraceLayer::new_for_http())
         .layer(SetResponseHeaderLayer::overriding(
             header::STRICT_TRANSPORT_SECURITY,
@@ -162,11 +165,7 @@ async fn main() -> Result<(), Error> {
             state.clone(),
             authentication_middleware,
         ))
-        .with_state(state)
-        .with_kangaroo(
-            KangarooConfig::new(&settings.static_files_path)
-                .with_frontend_development_server(settings.get_frontend_development_server_uri()),
-        );
+        .with_state(state);
 
     let server = Server::new(&settings);
     let worker = Worker::new(dynamic_dns_manager, lets_encrypt_manager);
