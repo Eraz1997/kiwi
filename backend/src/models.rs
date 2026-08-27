@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 use crate::error::Error;
 
 #[derive(Clone, Debug, FromSql, ToSql, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 #[postgres(name = "user_role")]
 pub enum UserRole {
     Admin,

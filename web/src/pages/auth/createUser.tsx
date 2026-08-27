@@ -55,13 +55,14 @@ export const CreateUser: Component = () => {
 			<VStack gap="6">
 				<Heading textStyle="6xl">🥝</Heading>
 				<Show when={success()}>
-					<Alert.Root status="neutral">
-						<Alert.Indicator>
-							<Sparkle />
-						</Alert.Indicator>
+					<Alert.Root borderColor="lime.default">
+						<Alert.Icon
+							color="lime.text"
+							asChild={(iconProps) => <Sparkle {...iconProps()} />}
+						/>
 						<Alert.Content>
-							<Alert.Title>User Created</Alert.Title>
-							<Alert.Description>
+							<Alert.Title color="lime.text">User Created</Alert.Title>
+							<Alert.Description color="lime.text">
 								Your user has been created and you are now logged in. Go visit
 								Kiwi services!
 							</Alert.Description>
@@ -69,13 +70,14 @@ export const CreateUser: Component = () => {
 					</Alert.Root>
 				</Show>
 				<Show when={error()}>
-					<Alert.Root status="error">
-						<Alert.Indicator>
-							<CircleSlash />
-						</Alert.Indicator>
+					<Alert.Root borderColor="red.default">
+						<Alert.Icon
+							color="red.text"
+							asChild={(iconProps) => <CircleSlash {...iconProps()} />}
+						/>
 						<Alert.Content>
-							<Alert.Title>Access denied</Alert.Title>
-							<Alert.Description>
+							<Alert.Title color="red.text">Access denied</Alert.Title>
+							<Alert.Description color="red.text">
 								<Switch>
 									<Match when={error() === "bad invitation"}>
 										The invitation code is invalid.

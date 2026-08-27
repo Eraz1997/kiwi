@@ -375,7 +375,7 @@ fn erase_cookies_and_redirect_to_login(
 
     let redirect_uri = if let Some(encoded_return_uri) = encoded_return_uri {
         format!(
-            "{}/login?return_uri={}",
+            "{}/login?returnUri={}",
             redirect_uri_prefix, encoded_return_uri
         )
     } else {

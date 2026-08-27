@@ -44,7 +44,6 @@ impl FromStr for Secret {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
 pub enum DynamicDnsProvider {
     GoDaddy,
 }

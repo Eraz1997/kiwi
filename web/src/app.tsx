@@ -1,5 +1,4 @@
 import { type Component, Match, Switch } from "solid-js";
-import { Toaster } from "./components/toast";
 import { KangarooProvider } from "./contexts/kangaroo";
 import { useRouter } from "./contexts/router";
 import { AdminIndex } from "./pages/admin/(admin)";
@@ -54,7 +53,6 @@ export const App: Component = () => {
 					<NotFound />
 				</Match>
 			</Switch>
-			<Toaster />
 		</KangarooProvider>
 	);
 };

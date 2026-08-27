@@ -117,12 +117,13 @@ export const ServiceDetailsCard: Component<Props> = (props) => {
 		<VStack gap="6">
 			<Show when={error()}>
 				<Alert.Root borderColor="red.default">
-					<Alert.Indicator>
-						<CircleX />
-					</Alert.Indicator>
+					<Alert.Icon
+						color="red.text"
+						asChild={(iconProps) => <CircleX {...iconProps()} />}
+					/>
 					<Alert.Content>
-						<Alert.Title>Something went wrong</Alert.Title>
-						<Alert.Description>{error()}</Alert.Description>
+						<Alert.Title color="red.text">Something went wrong</Alert.Title>
+						<Alert.Description color="red.text">{error()}</Alert.Description>
 					</Alert.Content>
 				</Alert.Root>
 			</Show>

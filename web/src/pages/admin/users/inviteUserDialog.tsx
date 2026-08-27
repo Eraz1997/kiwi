@@ -142,7 +142,7 @@ export const InviteUserDialog: Component<Props> = (props) => {
 						<Dialog.CloseTrigger>
 							<IconButton
 								aria-label="Close Dialog"
-								variant="plain"
+								variant="ghost"
 								size="sm"
 								position="absolute"
 								top="2"
@@ -199,7 +199,7 @@ export const InviteUserDialog: Component<Props> = (props) => {
 						<Dialog.CloseTrigger>
 							<IconButton
 								aria-label="Close Dialog"
-								variant="plain"
+								variant="ghost"
 								size="sm"
 								position="absolute"
 								top="2"

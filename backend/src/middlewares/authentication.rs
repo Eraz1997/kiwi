@@ -109,7 +109,7 @@ pub async fn authentication_middleware(
         }
         (Some(_), None, Ok(_)) => {
             let redirect_uri = format!(
-                "https://auth.{}/login?return_uri={}",
+                "https://auth.{}/login?returnUri={}",
                 domain, encoded_original_uri
             );
             Redirect::to(&redirect_uri).into_response()
@@ -119,7 +119,7 @@ pub async fn authentication_middleware(
                 next.run(request).await
             } else {
                 let redirect_uri = format!(
-                    "https://{}/api/refresh-credentials?return_uri={}",
+                    "https://{}/api/refresh-credentials?returnUri={}",
                     domain_and_subdomain, encoded_original_uri
                 );
                 Redirect::temporary(&redirect_uri).into_response()

@@ -1,7 +1,7 @@
+import { XIcon } from "lucide-solid";
 import { type Component, For } from "solid-js";
 import { Container } from "styled-system/jsx";
-import { Table } from "~/components";
-import { toaster } from "~/components/toast";
+import { IconButton, Table, Toast } from "~/components";
 import { useKangaroo } from "~/contexts/kangaroo";
 import { createBackendClient } from "~/hooks/createBackendClient";
 import { createResourceWithInitialValue } from "~/hooks/createResourceWithInitialValue";
@@ -9,6 +9,12 @@ import type { User } from "~/types";
 import { NavigationBar } from "../navigationBar";
 import { DeleteUserDialog } from "./deleteUserDialog";
 import { InviteUserDialog } from "./inviteUserDialog";
+
+const toaster = Toast.createToaster({
+	placement: "bottom-end",
+	overlap: true,
+	gap: 16,
+});
 
 export const AdminUsers: Component = () => {
 	const adminClient = createBackendClient("admin");
@@ -67,6 +73,24 @@ export const AdminUsers: Component = () => {
 					</Table.Foot>
 				</Table.Root>
 			</Container>
+			<Toast.Toaster toaster={toaster}>
+				{(toast) => {
+					const color = toast().type === "success" ? "lime" : "red";
+					return (
+						<Toast.Root borderColor={`${color}.default`}>
+							<Toast.Title color={`${color}.text`}>{toast().title}</Toast.Title>
+							<Toast.Description color={`${color}.text`}>
+								{toast().description}
+							</Toast.Description>
+							<Toast.CloseTrigger color={`${color}.text`}>
+								<IconButton size="sm" variant="link">
+									<XIcon />
+								</IconButton>
+							</Toast.CloseTrigger>
+						</Toast.Root>
+					);
+				}}
+			</Toast.Toaster>
 		</>
 	);
 };

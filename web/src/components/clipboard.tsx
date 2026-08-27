@@ -1,37 +1,45 @@
-import { Clipboard } from "@ark-ui/solid/clipboard";
-import { CheckIcon, CopyIcon } from "lucide-solid";
+import { type Assign, Clipboard } from "@ark-ui/solid";
 import type { ComponentProps } from "solid-js";
-import { createStyleContext } from "styled-system/jsx";
-import { clipboard } from "styled-system/recipes";
+import { type ClipboardVariantProps, clipboard } from "styled-system/recipes";
+import type { HTMLStyledProps } from "styled-system/types";
+import { createStyleContext } from "./utils/create-style-context";
 
 const { withProvider, withContext } = createStyleContext(clipboard);
 
+export type RootProviderProps = ComponentProps<typeof RootProvider>;
+export const RootProvider = withProvider<
+	Assign<
+		Assign<HTMLStyledProps<"div">, Clipboard.RootProviderBaseProps>,
+		ClipboardVariantProps
+	>
+>(Clipboard.RootProvider, "root");
+
 export type RootProps = ComponentProps<typeof Root>;
-export const Root = withProvider(Clipboard.Root, "root");
-export const RootProvider = withProvider(Clipboard.RootProvider, "root");
-export const Control = withContext(Clipboard.Control, "control");
-export const Input = withContext(Clipboard.Input, "input");
-export const Label = withContext(Clipboard.Label, "label");
-export const Trigger = withContext(Clipboard.Trigger, "trigger");
+export const Root = withProvider<
+	Assign<
+		Assign<HTMLStyledProps<"div">, Clipboard.RootBaseProps>,
+		ClipboardVariantProps
+	>
+>(Clipboard.Root, "root");
 
-export { ClipboardContext as Context } from "@ark-ui/solid/clipboard";
+export const Control = withContext<
+	Assign<HTMLStyledProps<"div">, Clipboard.ControlBaseProps>
+>(Clipboard.Control, "control");
 
-type IndicatorProps = ComponentProps<typeof StyledIndicator>;
+export const Indicator = withContext<
+	Assign<HTMLStyledProps<"div">, Clipboard.IndicatorBaseProps>
+>(Clipboard.Indicator, "indicator");
 
-const StyledIndicator = withContext(Clipboard.Indicator, "indicator");
+export const Input = withContext<
+	Assign<HTMLStyledProps<"input">, Clipboard.InputBaseProps>
+>(Clipboard.Input, "input");
 
-export const Indicator = (props: IndicatorProps) => {
-	return (
-		<StyledIndicator copied={<CheckIcon />} {...props}>
-			<CopyIcon />
-		</StyledIndicator>
-	);
-};
+export const Label = withContext<
+	Assign<HTMLStyledProps<"label">, Clipboard.LabelBaseProps>
+>(Clipboard.Label, "label");
 
-export const CopyText = (props: IndicatorProps) => {
-	return (
-		<StyledIndicator copied="Copied" {...props}>
-			Copy
-		</StyledIndicator>
-	);
-};
+export const Trigger = withContext<
+	Assign<HTMLStyledProps<"button">, Clipboard.TriggerBaseProps>
+>(Clipboard.Trigger, "trigger");
+
+export { ClipboardContext as Context } from "@ark-ui/solid";

@@ -65,13 +65,16 @@ export const Certificates: Component = () => {
 			<Container p="12" maxW="md" overflowX="scroll">
 				<VStack gap="6">
 					<Show when={error()}>
-						<Alert.Root status="error">
-							<Alert.Indicator>
-								<CircleX />
-							</Alert.Indicator>
+						<Alert.Root borderColor="red.default">
+							<Alert.Icon
+								color="red.text"
+								asChild={(iconProps) => <CircleX {...iconProps()} />}
+							/>
 							<Alert.Content>
-								<Alert.Title>Something went wrong</Alert.Title>
-								<Alert.Description>{error()}</Alert.Description>
+								<Alert.Title color="red.text">Something went wrong</Alert.Title>
+								<Alert.Description color="red.text">
+									{error()}
+								</Alert.Description>
 							</Alert.Content>
 						</Alert.Root>
 					</Show>

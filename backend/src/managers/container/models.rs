@@ -164,7 +164,6 @@ impl ContainerConfiguration {
 }
 
 #[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub enum LogType {
     Output,
     Error,

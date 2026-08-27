@@ -10,7 +10,6 @@ pub struct NewCertificateOrder {
 }
 
 #[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub enum CertificateVerificationStatus {
     Pending,
     Success,
